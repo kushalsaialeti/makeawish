@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { motion, useAnimationFrame, useMotionValue, useTransform, wrap, AnimatePresence } from 'framer-motion';
+import React, { useState } from 'react';
+import { motion, useAnimationFrame, useMotionValue, useTransform, wrap } from 'framer-motion';
 import { useCmsStore } from '../../store/cmsStore';
 
 function InfiniteMarquee({ 
@@ -13,7 +13,7 @@ function InfiniteMarquee({
 }) {
   const baseX = useMotionValue(0);
 
-  useAnimationFrame((t, delta) => {
+  useAnimationFrame((_, delta) => {
     if (isHovered) return;
     // velocity is in % per second. delta is ms.
     let moveBy = baseVelocity * (delta / 1000);

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCmsStore } from '../store/cmsStore';
-import type { WishData } from '../store/cmsStore';
 import { Routes, Route, useNavigate, useParams } from 'react-router-dom';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -198,6 +197,7 @@ const WishList = () => {
 
 const WishEditorWrapper = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { fetchWishById, currentWishId, isLoading, error } = useCmsStore();
 
   useEffect(() => {

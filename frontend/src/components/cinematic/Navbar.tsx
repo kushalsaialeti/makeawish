@@ -1,5 +1,3 @@
-import React from 'react';
-
 export const Navbar = () => {
   return (
     <nav className="absolute top-0 left-0 w-full z-50 flex items-center justify-between px-8 py-6 bg-gradient-to-b from-black/80 to-transparent">

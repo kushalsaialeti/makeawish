@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { fadeUp, cinematicReveal, staggerContainer } from '../motion/variants';
 import { useCmsStore } from '../../store/cmsStore';

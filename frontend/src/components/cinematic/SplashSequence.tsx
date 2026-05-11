@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCmsStore } from '../../store/cmsStore';
 import confetti from 'canvas-confetti';
@@ -65,7 +65,7 @@ const CombinedLockScreen: React.FC<{
   clockText: string,
   splashImage: string,
   onUnlock: () => void 
-}> = ({ targetDate, correctPin, recipientName, clockText, splashImage, onUnlock }) => {
+}> = ({ targetDate, correctPin, recipientName, splashImage, onUnlock }) => {
   const [time, setTime] = useState({ days: 0, hours: 0, mins: 0, secs: 0 });
   const [phase, setPhase] = useState<'countdown' | 'explosion'>('countdown');
   const [pin, setPin] = useState<string>('');

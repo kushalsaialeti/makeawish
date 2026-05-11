@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useParams } from 'react-router-dom';
 import { SmoothScroll } from './components/motion/SmoothScroll';
 import { ScrapbookHero } from './components/cinematic/ScrapbookHero';
 import { ZineArchive } from './components/cinematic/ZineArchive';
@@ -12,7 +12,6 @@ import { useCmsStore } from './store/cmsStore';
 import { Memories } from './pages/Memories';
 import { GiftSequence } from './components/cinematic/GiftSequence';
 import { Navigation } from './components/Navigation';
-import { useParams } from 'react-router-dom';
 
 function WishView() {
   const { slug } = useParams<{ slug: string }>();
