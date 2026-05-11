@@ -191,57 +191,101 @@ const CombinedLockScreen: React.FC<{
           </div>
         </motion.div>
 
-        {/* Right Side: Dial Pad */}
+        {/* Right Side: Message or Dial Pad */}
         <div className="flex flex-col items-center">
-          <h2 className="text-2xl md:text-3xl font-bold mb-6 tracking-wide drop-shadow-md">Enter the passcode</h2>
-          
-          {/* PIN Boxes (8 numbers) */} 
-          <div className="flex gap-2 mb-8">
-            {['M', 'M', 'D', 'D', 'Y', 'Y', 'Y', 'Y'].map((char, i) => (
-              <motion.div 
-                key={i}
-                animate={error ? { x: [-5, 5, -5, 5, 0] } : {}}
-                className={`w-8 h-10 md:w-10 md:h-12 border-2 rounded-lg flex items-center justify-center text-xl font-bold transition-all ${
-                  pin.length > i ? 'bg-white text-[#3a86ff] border-white' : 'border-white/40 bg-transparent text-white/30'
-                }`}
-              >
-                {pin.length > i ? '*' : char}
-              </motion.div>
-            ))}
-          </div>
+          {phase === 'countdown' ? (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex flex-col items-center text-center max-w-xs space-y-8"
+            >
+              <div className="relative">
+                <motion.div 
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="w-32 h-32 md:w-48 md:h-48 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-xl border-4 border-white/30"
+                >
+                  <span className="text-6xl">🔒</span>
+                </motion.div>
+                <div className="absolute -bottom-4 -right-4 bg-white text-blue-500 p-2 rounded-2xl font-black text-sm shadow-xl rotate-12">
+                  WAITING...
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <h2 className="text-3xl md:text-4xl font-black text-white drop-shadow-lg">
+                  Hold your breath! ✨
+                </h2>
+                <p className="text-blue-100 text-lg font-medium italic opacity-80">
+                  Your special surprise is being prepared. The secret code will unlock as soon as the timer hits zero!
+                </p>
+              </div>
 
-          {/* Circular Dial Pad */}
-          <div className="grid grid-cols-3 gap-4 md:gap-6">
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9, '*', 0, '#'].map((val) => (
-              <motion.button
-                key={val}
-                whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-                onClick={() => typeof val === 'number' && handleKeyPress(val.toString())}
-                className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-white text-[#3a86ff] text-xl font-bold shadow-lg hover:bg-gray-100 transition-colors"
+              <motion.div 
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+                className="text-4xl"
               >
-                {val}
-              </motion.button>
-            ))}
-            {/* Control Buttons Below */}
-            <div className="col-span-3 flex justify-center gap-4 mt-2">
-               <motion.button
-                whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                onClick={() => handleKeyPress('DEL')}
-                className="px-6 py-2 rounded-full bg-red-400 text-white font-bold text-sm shadow-md"
-              >
-                DELETE
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                onClick={() => handleKeyPress('ENTER')}
-                className={`px-8 py-2 rounded-full font-bold text-sm shadow-md transition-colors ${
-                  unlocked ? 'bg-green-500 text-white' : 'bg-white text-[#3a86ff]'
-                }`}
-              >
-                {unlocked ? 'UNLOCKED' : 'ENTER'}
-              </motion.button>
-            </div>
-          </div>
+                💝
+              </motion.div>
+            </motion.div>
+          ) : (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex flex-col items-center"
+            >
+              <h2 className="text-2xl md:text-3xl font-bold mb-6 tracking-wide drop-shadow-md">Enter the passcode</h2>
+              
+              {/* PIN Boxes (8 numbers) */} 
+              <div className="flex gap-2 mb-8">
+                {['M', 'M', 'D', 'D', 'Y', 'Y', 'Y', 'Y'].map((char, i) => (
+                  <motion.div 
+                    key={i}
+                    animate={error ? { x: [-5, 5, -5, 5, 0] } : {}}
+                    className={`w-8 h-10 md:w-10 md:h-12 border-2 rounded-lg flex items-center justify-center text-xl font-bold transition-all ${
+                      pin.length > i ? 'bg-white text-pink-500 border-white' : 'border-white/40 bg-transparent text-white/30'
+                    }`}
+                  >
+                    {pin.length > i ? '*' : char}
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Circular Dial Pad */}
+              <div className="grid grid-cols-3 gap-4 md:gap-6">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, '*', 0, '#'].map((val) => (
+                  <motion.button
+                    key={val}
+                    whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                    onClick={() => typeof val === 'number' && handleKeyPress(val.toString())}
+                    className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-white text-pink-500 text-xl font-bold shadow-lg hover:bg-gray-100 transition-colors"
+                  >
+                    {val}
+                  </motion.button>
+                ))}
+                {/* Control Buttons Below */}
+                <div className="col-span-3 flex justify-center gap-4 mt-2">
+                   <motion.button
+                    whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                    onClick={() => handleKeyPress('DEL')}
+                    className="px-6 py-2 rounded-full bg-red-400 text-white font-bold text-sm shadow-md"
+                  >
+                    DELETE
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                    onClick={() => handleKeyPress('ENTER')}
+                    className={`px-8 py-2 rounded-full font-bold text-sm shadow-md transition-colors ${
+                      unlocked ? 'bg-green-500 text-white' : 'bg-white text-pink-500'
+                    }`}
+                  >
+                    {unlocked ? 'UNLOCKED' : 'ENTER'}
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          )}
         </div>
 
       </div>
