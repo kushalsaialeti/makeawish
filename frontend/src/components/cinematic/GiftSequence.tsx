@@ -292,24 +292,24 @@ export const GiftSequence: React.FC<GiftSequenceProps> = ({ onComplete, initialS
             initial={{ opacity: 0, rotateY: -90, scale: 0.5 }}
             animate={{ opacity: 1, rotateY: 0, scale: 1 }}
             transition={{ duration: 1, type: 'spring', damping: 15 }}
-            className="w-full h-full flex items-center justify-center bg-[#1a1616] p-4 overflow-y-auto"
+            className="w-full h-full flex flex-col items-center justify-start bg-[#1a1616] p-4 overflow-y-auto"
           >
-            {/* Back to Gift Button */}
-            <div className="absolute top-8 left-8 z-[130]">
+            {/* Back to Gift Button - Moved to fixed for mobile */}
+            <div className="fixed top-6 left-6 md:top-8 md:left-8 z-[140]">
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setStep('gift')}
-                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full backdrop-blur-md text-white/80 transition-colors border border-white/20"
+                className="flex items-center gap-2 bg-black/40 hover:bg-black/60 px-4 py-2 rounded-full backdrop-blur-md text-white transition-colors border border-white/20 shadow-xl"
               >
                 <span>←</span>
-                <span className="text-sm font-bold uppercase tracking-wider">Back</span>
+                <span className="text-[10px] md:text-sm font-bold uppercase tracking-wider">Back</span>
               </motion.button>
             </div>
 
-            <div className="max-w-2xl w-full perspective-1000 my-8">
+            <div className="max-w-2xl w-full perspective-1000 mt-20 mb-8">
               <motion.div 
-                className="bg-[#fdfaf3] p-10 md:p-16 shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative overflow-hidden min-h-[80vh] flex flex-col"
+                className="bg-[#fdfaf3] p-8 md:p-16 shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative overflow-hidden min-h-[80vh] flex flex-col"
                 style={{ 
                   backgroundImage: "url('https://www.transparenttextures.com/patterns/old-paper.png')",
                   borderRadius: "2px 4px 3px 6px"
@@ -325,11 +325,11 @@ export const GiftSequence: React.FC<GiftSequenceProps> = ({ onComplete, initialS
                 <div className="absolute bottom-[15%] right-[8%] w-16 h-10 bg-[#4a3016]/15 rounded-full blur-xl" />
 
                 <div className="relative z-10 flex flex-col h-full">
-                  <h1 className="text-4xl md:text-6xl text-[#2d1e11] font-bold mb-12 text-center" style={{ fontFamily: "'Dancing Script', cursive" }}>
+                  <h1 className="text-3xl md:text-6xl text-[#2d1e11] font-bold mb-8 md:mb-12 text-center" style={{ fontFamily: "'Dancing Script', cursive" }}>
                     {giftSequence.letterTitle}
                   </h1>
                   
-                  <div className="text-xl md:text-2xl text-[#3d2b1a] space-y-8 whitespace-pre-wrap leading-[1.6] flex-grow" style={{ fontFamily: "'Dancing Script', cursive" }}>
+                  <div className="text-lg md:text-2xl text-[#3d2b1a] space-y-6 md:space-y-8 whitespace-pre-wrap leading-[1.6] flex-grow" style={{ fontFamily: "'Dancing Script', cursive" }}>
                     {giftSequence.letterBody}
                   </div>
                   
