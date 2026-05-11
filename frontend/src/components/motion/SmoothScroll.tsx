@@ -15,8 +15,8 @@ export const SmoothScroll: React.FC<SmoothScrollProps> = ({ children }) => {
       orientation: 'vertical',
       gestureOrientation: 'vertical',
       smoothWheel: true,
-      wheelMultiplier: 1,
-      touchMultiplier: 2,
+      wheelMultiplier: 1.2,
+      touchMultiplier: 2.5,
       infinite: false,
     } as any);
 

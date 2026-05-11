@@ -81,6 +81,9 @@ const CombinedLockScreen: React.FC<{
         const m = Math.floor((difference / 1000 / 60) % 60);
         const s = Math.floor((difference / 1000) % 60);
         setTime({ days: d, hours: h, mins: m, secs: s });
+        if (phase !== 'countdown') {
+          setPhase('countdown');
+        }
       } else {
         setTime({ days: 0, hours: 0, mins: 0, secs: 0 });
         if (phase !== 'explosion') {
@@ -115,7 +118,8 @@ const CombinedLockScreen: React.FC<{
   };
 
   const handleKeyPress = (val: string) => {
-    if (unlocked) return;
+    if (unlocked || phase === 'countdown') return; // Strict guard: No entry during countdown
+    
     if (val === 'ENTER') {
       const expectedPin = `${correctPin.m}${correctPin.d}${correctPin.y}`;
       if (pin === expectedPin || pin === '12162005') {

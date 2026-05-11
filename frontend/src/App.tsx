@@ -128,7 +128,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/wish/:slug" element={<WishView />} />
-          <Route path="/memories" element={<Memories />} />
+          <Route path="/memories" element={<SmoothScroll><Memories /></SmoothScroll>} />
           <Route path="/admin/*" element={<AdminDashboard />} />
         </Routes>
     </BrowserRouter>
