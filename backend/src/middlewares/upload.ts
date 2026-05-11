@@ -7,7 +7,7 @@ const storage = new CloudinaryStorage({
   params: async (req, file) => {
     return {
       folder: 'makeawish',
-      allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'avif'],
+      resource_type: 'auto', 
     };
   },
 });

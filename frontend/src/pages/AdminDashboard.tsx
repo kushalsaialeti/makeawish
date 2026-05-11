@@ -1,460 +1,682 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useCmsStore } from '../store/cmsStore';
-import type { ScrapbookHeroContent, SplashScreenContent, ZineSplitShowcaseContent, CoverflowGalleryContent, ZineArchiveContent } from '../store/cmsStore';
+import type { WishData } from '../store/cmsStore';
+import { Routes, Route, useNavigate, useParams } from 'react-router-dom';
 
-export const AdminDashboard = () => {
-  const { scrapbookHero, splashScreen, zineSplitShowcase, coverflowGallery, zineArchive, updateScrapbookHero, updateSplashScreen, updateZineSplitShowcase, updateCoverflowGallery, updateZineArchive, isLoading, fetchCmsContent } = useCmsStore();
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
+export const AdminDashboard = () => { 
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [pin, setPin] = useState('');
+
+  const handlePinSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pin === '12162005') {
+      setIsAuthenticated(true);
+    } else {
+      alert('Incorrect PIN');
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[#1c1917] flex items-center justify-center p-6">
+        <motion.form 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          onSubmit={handlePinSubmit}
+          className="bg-[#2d2a28] p-10 rounded-[2rem] shadow-2xl border border-white/10 w-full max-w-md text-center"
+        >
+          <h2 className="text-3xl font-black text-white mb-6 uppercase tracking-widest">Admin Access</h2>
+          <input 
+            type="password" 
+            value={pin}
+            onChange={(e) => setPin(e.target.value)}
+            placeholder="ENTER PIN"
+            className="w-full bg-black/50 border border-white/20 rounded-xl px-6 py-4 text-white text-center text-2xl tracking-[1em] mb-6 focus:outline-none focus:border-pink-500 transition-colors"
+          />
+          <button className="w-full bg-gradient-to-r from-pink-600 to-rose-600 text-white font-bold py-4 rounded-xl hover:opacity-90 transition-opacity uppercase tracking-widest">
+            Unlock Dashboard
+          </button>
+        </motion.form>
+      </div>
+    );
+  }
+
+  return (
+    <Routes>
+      <Route path="/" element={<WishList />} />
+      <Route path="/edit/:id" element={<WishEditorWrapper />} />
+    </Routes>
+  );
+};
+
+const WishList = () => {
+  const [wishes, setWishes] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isCreating, setIsCreating] = useState(false);
+  const [newWish, setNewWish] = useState({ slug: '', name: '' });
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchWishes();
+  }, []);
+
+  const fetchWishes = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/cms`);
+      const data = await response.json();
+      setWishes(data);
+    } catch (error) {
+      console.error('Failed to fetch wishes', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newWish.slug || !newWish.name) return;
+    
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/cms`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug: newWish.slug, recipient_name: newWish.name })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to create wish');
+      if (data.id) {
+        navigate(`/admin/edit/${data.id}`);
+      } else {
+        throw new Error('No ID returned from server');
+      }
+    } catch (error: any) {
+      alert(`Error: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#1c1917] text-white p-8 md:p-16">
+      <div className="max-w-6xl mx-auto">
+        <div className="flex justify-between items-center mb-12">
+          <div>
+            <h1 className="text-4xl font-black uppercase tracking-tighter mb-2">Birthday Factory</h1>
+            <p className="text-white/40 font-serif italic">Manage and create magical birthday experiences.</p>
+          </div>
+          <button 
+            onClick={() => setIsCreating(true)}
+            className="bg-white text-black px-8 py-3 rounded-full font-bold uppercase tracking-widest hover:bg-pink-500 hover:text-white transition-all"
+          >
+            + Create New Wish
+          </button>
+        </div>
+
+        {isCreating && (
+          <motion.form 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            onSubmit={handleCreate}
+            className="bg-[#2d2a28] p-8 rounded-3xl mb-12 border border-white/10 overflow-hidden"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest text-white/40 mb-2">Recipient Name</label>
+                <input 
+                  type="text" 
+                  value={newWish.name}
+                  onChange={e => setNewWish({...newWish, name: e.target.value})}
+                  placeholder="e.g. Sarah Jenkins"
+                  className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest text-white/40 mb-2">Unique URL Slug</label>
+                <input 
+                  type="text" 
+                  value={newWish.slug}
+                  onChange={e => setNewWish({...newWish, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-')})}
+                  placeholder="e.g. sarah-2024"
+                  className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3"
+                  required
+                />
+              </div>
+            </div>
+            <div className="flex gap-4">
+              <button type="submit" className="bg-pink-600 px-8 py-3 rounded-xl font-bold uppercase tracking-widest">Generate Template</button>
+              <button type="button" onClick={() => setIsCreating(false)} className="bg-white/10 px-8 py-3 rounded-xl font-bold uppercase tracking-widest">Cancel</button>
+            </div>
+          </motion.form>
+        )}
+
+        {isLoading ? (
+          <div className="text-center py-20 opacity-40 italic">Loading your masterpieces...</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {wishes.map((wish) => (
+              <motion.div 
+                key={wish.id}
+                whileHover={{ y: -5 }}
+                className="bg-[#2d2a28] rounded-3xl p-6 border border-white/5 shadow-xl group"
+              >
+                <div className="flex justify-between items-start mb-6">
+                  <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-2xl">🎁</div>
+                  <div className={`text-[10px] font-bold px-3 py-1 rounded-full ${wish.is_published ? 'bg-green-500/20 text-green-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                    {wish.is_published ? 'PUBLISHED' : 'DRAFT'}
+                  </div>
+                </div>
+                <h3 className="text-xl font-bold mb-1">{wish.recipient_name}</h3>
+                <p className="text-white/30 text-xs font-mono mb-6">/wish/{wish.slug}</p>
+                <div className="flex gap-3">
+                  <button 
+                    onClick={() => navigate(`/admin/edit/${wish.id}`)}
+                    className="flex-1 bg-white/5 hover:bg-white/10 py-3 rounded-xl text-sm font-bold transition-colors"
+                  >
+                    Edit
+                  </button>
+                  <a 
+                    href={`/wish/${wish.slug}`}
+                    target="_blank"
+                    className="flex-1 bg-pink-600/20 hover:bg-pink-600/40 text-pink-400 py-3 rounded-xl text-sm font-bold text-center transition-colors"
+                  >
+                    View
+                  </a>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const WishEditorWrapper = () => {
+  const { id } = useParams<{ id: string }>();
+  const { fetchWishById, currentWishId, isLoading, error } = useCmsStore();
+
+  useEffect(() => {
+    if (id && id !== 'undefined') {
+      fetchWishById(id);
+    }
+  }, [id, fetchWishById]);
+
+  if (isLoading) return <div className="min-h-screen bg-[#1c1917] flex items-center justify-center text-white italic">Loading Editor...</div>;
+  if (error) return <div className="min-h-screen bg-[#1c1917] flex items-center justify-center text-red-400">Error: {error}</div>;
+  if (!id || id === 'undefined') {
+    return <div className="min-h-screen bg-[#1c1917] flex flex-col items-center justify-center text-white">
+      <p className="mb-4 opacity-40 italic">Invalid Wish ID</p>
+      <button onClick={() => navigate('/admin')} className="bg-white text-black px-6 py-2 rounded-full font-bold uppercase tracking-widest">Back to List</button>
+    </div>;
+  }
+
+  if (!currentWishId) return null;
+
+  return <WishEditor />;
+};
+
+const WishEditor = () => {
+  const { scrapbookHero, splashScreen, zineSplitShowcase, coverflowGallery, zineArchive, giftSequence, memories, updateSection, currentWishSlug } = useCmsStore();
+  const navigate = useNavigate();
   
-  const [activeTab, setActiveTab] = useState<'splash' | 'hero' | 'split' | 'archive' | 'coverflow'>('splash');
+  const [activeTab, setActiveTab] = useState<'splash' | 'hero' | 'split' | 'archive' | 'coverflow' | 'gift' | 'memories'>('splash');
   const [uploadingField, setUploadingField] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   // Local state for forms
-  const [heroForm, setHeroForm] = useState<ScrapbookHeroContent | null>(null);
-  const [splashForm, setSplashForm] = useState<SplashScreenContent | null>(null);
-  const [splitForm, setSplitForm] = useState<ZineSplitShowcaseContent | null>(null);
-  const [coverflowForm, setCoverflowForm] = useState<CoverflowGalleryContent | null>(null);
-  const [archiveForm, setArchiveForm] = useState<ZineArchiveContent | null>(null);
+  const [heroForm, setHeroForm] = useState(scrapbookHero);
+  const [splashForm, setSplashForm] = useState(splashScreen);
+  const [splitForm, setSplitForm] = useState(zineSplitShowcase);
+  const [coverflowForm, setCoverflowForm] = useState(coverflowGallery);
+  const [archiveForm, setArchiveForm] = useState(zineArchive);
+  const [giftForm, setGiftForm] = useState(giftSequence);
+  const [memoriesForm, setMemoriesForm] = useState(memories);
 
   useEffect(() => {
-    fetchCmsContent();
-  }, [fetchCmsContent]);
+    setHeroForm(scrapbookHero);
+    setSplashForm(splashScreen);
+    setSplitForm(zineSplitShowcase);
+    setCoverflowForm(coverflowGallery);
+    setArchiveForm(zineArchive);
+    setGiftForm(giftSequence);
+    setMemoriesForm(memories);
+  }, [scrapbookHero, splashScreen, zineSplitShowcase, coverflowGallery, zineArchive, giftSequence, memories]);
 
-  useEffect(() => {
-    if (scrapbookHero) setHeroForm(scrapbookHero);
-    if (splashScreen) setSplashForm(splashScreen);
-    if (zineSplitShowcase) setSplitForm(zineSplitShowcase);
-    if (coverflowGallery) setCoverflowForm(coverflowGallery);
-    if (zineArchive) setArchiveForm(zineArchive);
-  }, [scrapbookHero, splashScreen, zineSplitShowcase, coverflowGallery, zineArchive]);
-
-  const handleHeroChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    if (heroForm) setHeroForm({ ...heroForm, [e.target.name]: e.target.value });
+  const handleSave = async (section: any, form: any) => {
+    await updateSection(section, form);
+    setShowSuccess(true);
+    setTimeout(() => setShowSuccess(false), 3000);
   };
 
-  const handleSplashChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (splashForm) setSplashForm({ ...splashForm, [e.target.name]: e.target.value });
-  };
-
-  const handleSplitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (splitForm) setSplitForm({ ...splitForm, [e.target.name]: e.target.value });
-  };
-
-  const handleCoverflowChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (coverflowForm) setCoverflowForm({ ...coverflowForm, [e.target.name]: e.target.value });
-  };
-
-  const handleArchiveChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    if (archiveForm) setArchiveForm({ ...archiveForm, [e.target.name]: e.target.value });
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, fieldName: string, formType: 'hero' | 'split' | 'coverflow') => {
+  const handleFileUpload = async (e: any, fieldName: string, setter: any, currentForm: any) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setUploadingField(fieldName);
-    const uploadData = new FormData();
-    uploadData.append('file', file);
-
+    const formData = new FormData();
+    formData.append('file', file);
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      const response = await fetch(`${API_URL}/api/cms/upload`, {
-        method: 'POST',
-        body: uploadData,
-      });
-
-      if (!response.ok) throw new Error('Upload failed');
-      const data = await response.json();
-      
-      if (formType === 'hero' && heroForm) setHeroForm({ ...heroForm, [fieldName]: data.url });
-      if (formType === 'split' && splitForm) setSplitForm({ ...splitForm, [fieldName]: data.url });
-      if (formType === 'coverflow' && coverflowForm) setCoverflowForm({ ...coverflowForm, [fieldName]: data.url });
-      if (formType === 'archive' && archiveForm) setArchiveForm({ ...archiveForm, [fieldName]: data.url });
-    } catch (error) {
-      console.error(error);
-      alert('Failed to upload image. Please try again.');
+      const res = await fetch(`${API_URL}/api/cms/upload`, { method: 'POST', body: formData });
+      const data = await res.json();
+      setter({ ...currentForm, [fieldName]: data.url });
     } finally {
       setUploadingField(null);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (activeTab === 'hero' && heroForm) {
-      await updateScrapbookHero(heroForm);
-    } else if (activeTab === 'splash' && splashForm) {
-      await updateSplashScreen(splashForm);
-    } else if (activeTab === 'split' && splitForm) {
-      await updateZineSplitShowcase(splitForm);
-    } else if (activeTab === 'coverflow' && coverflowForm) {
-      await updateCoverflowGallery(coverflowForm);
-    } else if (activeTab === 'archive' && archiveForm) {
-      await updateZineArchive(archiveForm);
-    }
-    alert('Changes saved successfully!');
-  };
-
-  if (!heroForm || !splashForm || !splitForm || !coverflowForm || !archiveForm) return <div className="p-8 text-white">Loading CMS...</div>;
-
   return (
-    <div className="min-h-screen bg-[#151111] text-[#e6d0d2] p-8 font-mono">
-      <h1 className="text-3xl font-black mb-8 border-b border-white/20 pb-4">CMS Dashboard</h1>
-      
-      <div className="flex space-x-4 mb-8 overflow-x-auto pb-4">
-        <button 
-          onClick={() => setActiveTab('splash')}
-          className={`px-6 py-2 border whitespace-nowrap ${activeTab === 'splash' ? 'bg-white text-black border-white' : 'border-white/20 hover:border-white/50'}`}
-        >
-          Splash Screen (Timer & Lock)
-        </button>
-        <button 
-          onClick={() => setActiveTab('hero')}
-          className={`px-6 py-2 border whitespace-nowrap ${activeTab === 'hero' ? 'bg-white text-black border-white' : 'border-white/20 hover:border-white/50'}`}
-        >
-          Scrapbook Hero
-        </button>
-        <button 
-          onClick={() => setActiveTab('split')}
-          className={`px-6 py-2 border whitespace-nowrap ${activeTab === 'split' ? 'bg-white text-black border-white' : 'border-white/20 hover:border-white/50'}`}
-        >
-          Living Art (Split Showcase)
-        </button>
-        <button 
-          onClick={() => setActiveTab('archive')}
-          className={`px-6 py-2 border whitespace-nowrap ${activeTab === 'archive' ? 'bg-white text-black border-white' : 'border-white/20 hover:border-white/50'}`}
-        >
-          Archive Section
-        </button>
-        <button 
-          onClick={() => setActiveTab('coverflow')}
-          className={`px-6 py-2 border whitespace-nowrap ${activeTab === 'coverflow' ? 'bg-white text-black border-white' : 'border-white/20 hover:border-white/50'}`}
-        >
-          Moments (Coverflow)
-        </button>
-      </div>
-      
-      <form onSubmit={handleSubmit} className="max-w-4xl space-y-8 bg-[#1a1616] p-8 border border-white/10 rounded-xl shadow-2xl">
-        
-        {/* Splash Screen Tab */}
-        {activeTab === 'splash' && (
-          <>
-            <h2 className="text-xl font-bold text-white bg-[#7a1022] p-3 rounded-t">Splash Screen Settings</h2>
-            
-            <div className="space-y-4 border border-white/10 p-4 rounded bg-[#100c0c]">
-              <h3 className="font-bold text-[#f3d4d6]">Countdown Timer</h3>
-              <div>
-                <label className="block text-xs mb-1">Target Date & Time (ISO format, e.g. 2026-12-31T00:00:00)</label>
-                <input 
-                  type="text" name="targetDate" value={splashForm.targetDate} onChange={handleSplashChange} 
-                  className="w-full bg-black/50 border border-white/20 p-2 text-white rounded"
-                />
-              </div>
-            </div>
+    <div className="min-h-screen bg-[#1c1917] text-white flex flex-col">
+      {/* Header */}
+      <header className="bg-[#2d2a28] border-b border-white/10 p-6 flex justify-between items-center sticky top-0 z-[1000]">
+        <div className="flex items-center gap-6">
+          <button onClick={() => navigate('/admin')} className="text-white/40 hover:text-white">← Back</button>
+          <h1 className="text-xl font-bold uppercase tracking-widest">Editing: <span className="text-pink-500">/wish/{currentWishSlug}</span></h1>
+        </div>
+        <div className="flex items-center gap-4">
+           {showSuccess && <span className="text-green-400 text-sm font-bold animate-pulse">Changes Saved!</span>}
+           <a href={`/wish/${currentWishSlug}`} target="_blank" className="bg-white/10 px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-white/20 transition-colors">Preview</a>
+        </div>
+      </header>
 
-            <div className="space-y-4 border border-white/10 p-4 rounded bg-[#100c0c]">
-              <h3 className="font-bold text-[#f3d4d6]">DOB Lock PIN</h3>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs mb-1">Correct Month (MM)</label>
-                  <input type="text" name="correctMonth" value={splashForm.correctMonth} onChange={handleSplashChange} className="w-full bg-black/50 border border-white/20 p-2 text-white rounded" />
-                </div>
-                <div>
-                  <label className="block text-xs mb-1">Correct Day (DD)</label>
-                  <input type="text" name="correctDay" value={splashForm.correctDay} onChange={handleSplashChange} className="w-full bg-black/50 border border-white/20 p-2 text-white rounded" />
-                </div>
-                <div>
-                  <label className="block text-xs mb-1">Correct Year (YYYY)</label>
-                  <input type="text" name="correctYear" value={splashForm.correctYear} onChange={handleSplashChange} className="w-full bg-black/50 border border-white/20 p-2 text-white rounded" />
-                </div>
-              </div>
-            </div>
+      <div className="flex flex-1 overflow-hidden">
+        {/* Tabs Sidebar */}
+        <div className="w-64 bg-[#211f1d] border-r border-white/5 p-4 flex flex-col gap-2 overflow-y-auto">
+          {[
+            { id: 'splash', label: 'Splash Screen', icon: '🔒' },
+            { id: 'hero', label: 'Scrapbook Hero', icon: '📖' },
+            { id: 'split', label: 'Split Showcase', icon: '🖼️' },
+            { id: 'archive', label: 'Memories Archive', icon: '📂' },
+            { id: 'coverflow', label: 'Photo Slider', icon: '🎠' },
+            { id: 'gift', label: 'Gift Sequence', icon: '🎁' },
+            { id: 'memories', label: 'TV Memories', icon: '📺' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm font-bold ${activeTab === tab.id ? 'bg-pink-600 text-white shadow-lg' : 'text-white/40 hover:bg-white/5'}`}
+            >
+              <span>{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-            <div className="space-y-4 border border-white/10 p-4 rounded bg-[#100c0c]">
-              <h3 className="font-bold text-[#f3d4d6]">Surprise Prompt</h3>
-              <div>
-                <label className="block text-xs mb-1">Prompt Heading</label>
-                <input type="text" name="promptHeading" value={splashForm.promptHeading} onChange={handleSplashChange} className="w-full bg-black/50 border border-white/20 p-2 text-white rounded" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs mb-1">"Open Now" Button Text</label>
-                  <input type="text" name="btnNowText" value={splashForm.btnNowText} onChange={handleSplashChange} className="w-full bg-black/50 border border-white/20 p-2 text-white rounded" />
-                </div>
-                <div>
-                  <label className="block text-xs mb-1">"Later" Button Text</label>
-                  <input type="text" name="btnLaterText" value={splashForm.btnLaterText} onChange={handleSplashChange} className="w-full bg-black/50 border border-white/20 p-2 text-white rounded" />
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Hero Section Tab */}
-        {activeTab === 'hero' && (
-          <>
-            <h2 className="text-xl font-bold text-white bg-[#7a1022] p-3 rounded-t">Scrapbook Hero Section</h2>
-            
-            <div className="space-y-4 border border-white/10 p-4 rounded bg-[#100c0c]">
-              <h3 className="font-bold text-[#f3d4d6]">Top Section</h3>
-              <div>
-                <label className="block text-xs mb-1">Top Message Text</label>
-                <textarea 
-                  name="topText" value={heroForm.topText} onChange={handleHeroChange} 
-                  className="w-full bg-black/50 border border-white/20 p-2 text-white rounded min-h-[80px]"
-                />
-              </div>
-              <div>
-                <label className="block text-xs mb-1">Top Wide Image</label>
-                <div className="flex gap-4 items-center">
-                  <input 
-                    type="text" name="topImage" value={heroForm.topImage} onChange={handleHeroChange} 
-                    className="flex-1 bg-black/50 border border-white/20 p-2 text-white rounded"
-                  />
-                  <input type="file" accept="image/*,video/*" onChange={(e) => handleFileUpload(e, 'topImage', 'hero')} className="hidden" id="upload-topImage" />
-                  <label htmlFor="upload-topImage" className="bg-white/10 hover:bg-white/20 px-4 py-2 cursor-pointer rounded whitespace-nowrap">
-                    {uploadingField === 'topImage' ? 'Uploading...' : 'Upload'}
-                  </label>
-                </div>
-                {heroForm.topImage && <img src={heroForm.topImage} className="h-20 object-cover mt-2 rounded border border-white/10" alt="Preview"/>}
-              </div>
-            </div>
-
-            <div className="space-y-4 border border-white/10 p-4 rounded bg-[#100c0c]">
-              <h3 className="font-bold text-[#f3d4d6]">Middle Section (Collage)</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs mb-1">Heading 1</label>
-                  <input type="text" name="middleHeading1" value={heroForm.middleHeading1} onChange={handleHeroChange} className="w-full bg-black/50 border border-white/20 p-2 text-white rounded" />
-                </div>
-                <div>
-                  <label className="block text-xs mb-1">Heading 2</label>
-                  <input type="text" name="middleHeading2" value={heroForm.middleHeading2} onChange={handleHeroChange} className="w-full bg-black/50 border border-white/20 p-2 text-white rounded" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs mb-1">Bottom Text</label>
-                <input type="text" name="middleBottomText" value={heroForm.middleBottomText} onChange={handleHeroChange} className="w-full bg-black/50 border border-white/20 p-2 text-white rounded" />
-              </div>
-              
-              {['bgMiddleImage', 'middleImageLeft', 'middleImageRight'].map((fieldName) => (
-                <div key={fieldName}>
-                  <label className="block text-xs mb-1 mt-4">{fieldName.replace(/([A-Z])/g, ' $1').trim()}</label>
-                  <div className="flex gap-4 items-center">
-                    <input 
-                      type="text" name={fieldName} value={heroForm[fieldName as keyof ScrapbookHeroContent]} onChange={handleHeroChange} 
-                      className="flex-1 bg-black/50 border border-white/20 p-2 text-white rounded"
-                    />
-                    <input type="file" accept="image/*,video/*" onChange={(e) => handleFileUpload(e, fieldName, 'hero')} className="hidden" id={`upload-${fieldName}`} />
-                    <label htmlFor={`upload-${fieldName}`} className="bg-white/10 hover:bg-white/20 px-4 py-2 cursor-pointer rounded whitespace-nowrap">
-                      {uploadingField === fieldName ? 'Uploading...' : 'Upload'}
-                    </label>
-                  </div>
-                  {heroForm[fieldName as keyof ScrapbookHeroContent] && <img src={heroForm[fieldName as keyof ScrapbookHeroContent]} className="h-16 object-cover mt-2 rounded border border-white/10" alt="Preview"/>}
-                </div>
-              ))}
-            </div>
-
-            <div className="space-y-4 border border-white/10 p-4 rounded bg-[#100c0c]">
-              <h3 className="font-bold text-[#f3d4d6]">Bottom Section</h3>
-              <div>
-                <label className="block text-xs mb-1">Bottom Wide Image</label>
-                <div className="flex gap-4 items-center">
-                  <input 
-                    type="text" name="bottomImage" value={heroForm.bottomImage} onChange={handleHeroChange} 
-                    className="flex-1 bg-black/50 border border-white/20 p-2 text-white rounded"
-                  />
-                  <input type="file" accept="image/*,video/*" onChange={(e) => handleFileUpload(e, 'bottomImage', 'hero')} className="hidden" id="upload-bottomImage" />
-                  <label htmlFor="upload-bottomImage" className="bg-white/10 hover:bg-white/20 px-4 py-2 cursor-pointer rounded whitespace-nowrap">
-                    {uploadingField === 'bottomImage' ? 'Uploading...' : 'Upload'}
-                  </label>
-                </div>
-                {heroForm.bottomImage && <img src={heroForm.bottomImage} className="h-20 object-cover mt-2 rounded border border-white/10" alt="Preview"/>}
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Split Showcase Tab */}
-        {activeTab === 'split' && (
-          <>
-            <h2 className="text-xl font-bold text-white bg-[#7a1022] p-3 rounded-t">Living Art Section (4 Flippable Cards)</h2>
-            <div className="space-y-8 border border-white/10 p-4 rounded bg-[#100c0c]">
-              {[1, 2, 3, 4].map((i) => {
-                const imgField = `image${i}` as keyof ZineSplitShowcaseContent;
-                const textField = `backText${i}` as keyof ZineSplitShowcaseContent;
-                const descField = `desc${i}` as keyof ZineSplitShowcaseContent;
-                return (
-                  <div key={i} className="p-4 border border-white/20 rounded bg-black/30">
-                    <h3 className="font-bold text-[#f3d4d6] mb-4 border-b border-white/10 pb-2">Card {i}</h3>
-                    
-                    <div className="mb-4">
-                      <label className="block text-xs mb-1">Front Image</label>
-                      <div className="flex gap-4 items-center">
-                        <input 
-                          type="text" name={imgField} value={splitForm[imgField]} onChange={handleSplitChange} 
-                          className="flex-1 bg-black/50 border border-white/20 p-2 text-white rounded"
-                        />
-                        <input type="file" accept="image/*,video/*" onChange={(e) => handleFileUpload(e, imgField, 'split')} className="hidden" id={`upload-split-${imgField}`} />
-                        <label htmlFor={`upload-split-${imgField}`} className="bg-white/10 hover:bg-white/20 px-4 py-2 cursor-pointer rounded whitespace-nowrap">
-                          {uploadingField === imgField ? 'Uploading...' : 'Upload'}
-                        </label>
+        {/* Content Area */}
+        <div className="flex-1 overflow-y-auto p-10 bg-black/20">
+          <AnimatePresence mode="wait">
+            {activeTab === 'splash' && splashForm && (
+              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="max-w-4xl mx-auto space-y-12">
+                <section className="space-y-6">
+                  <h2 className="text-2xl font-bold flex items-center gap-4">Splash Screen Settings <div className="h-px flex-1 bg-white/10" /></h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-2">
+                      <label className="text-[10px] uppercase tracking-widest text-white/40">Target Date (YYYY-MM-DDTHH:mm:ss)</label>
+                      <input type="text" value={splashForm.targetDate} onChange={e => setSplashForm({...splashForm, targetDate: e.target.value})} className="w-full bg-[#2d2a28] border border-white/10 rounded-xl px-4 py-3" />
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                         <label className="text-[10px] uppercase tracking-widest text-white/40">PIN Month</label>
+                         <input type="text" value={splashForm.correctMonth} onChange={e => setSplashForm({...splashForm, correctMonth: e.target.value})} className="w-full bg-[#2d2a28] border border-white/10 rounded-xl px-4 py-3 text-center" />
                       </div>
-                      {splitForm[imgField] && <img src={splitForm[imgField]} className="h-16 object-cover mt-2 rounded border border-white/10" alt="Preview"/>}
+                      <div className="space-y-2">
+                         <label className="text-[10px] uppercase tracking-widest text-white/40">PIN Day</label>
+                         <input type="text" value={splashForm.correctDay} onChange={e => setSplashForm({...splashForm, correctDay: e.target.value})} className="w-full bg-[#2d2a28] border border-white/10 rounded-xl px-4 py-3 text-center" />
+                      </div>
+                      <div className="space-y-2">
+                         <label className="text-[10px] uppercase tracking-widest text-white/40">PIN Year</label>
+                         <input type="text" value={splashForm.correctYear} onChange={e => setSplashForm({...splashForm, correctYear: e.target.value})} className="w-full bg-[#2d2a28] border border-white/10 rounded-xl px-4 py-3 text-center" />
+                      </div>
                     </div>
-
-                    <div className="mb-4">
-                      <label className="block text-xs mb-1">Back Text (Handwritten style)</label>
-                      <input 
-                        type="text" name={textField} value={splitForm[textField]} onChange={handleSplitChange} 
-                        className="w-full bg-black/50 border border-white/20 p-2 text-white rounded font-mono"
-                        placeholder="e.g. I CAN ALWAYS MAKE YOU SMILE"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs mb-1">Short Description (Below card)</label>
-                      <input 
-                        type="text" name={descField} value={splitForm[descField]} onChange={handleSplitChange} 
-                        className="w-full bg-black/50 border border-white/20 p-2 text-white rounded"
-                        placeholder="A moment of pure joy..."
-                      />
+                    <div className="space-y-4">
+                       <label className="text-[10px] uppercase tracking-widest text-white/40">Splash/Countdown Image</label>
+                       <div className="relative aspect-video rounded-2xl overflow-hidden bg-black/40 border border-white/5 group">
+                          <img src={splashForm.splashImage} className="w-full h-full object-cover opacity-50 group-hover:opacity-100 transition-opacity" />
+                          <label className="absolute inset-0 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 text-xs font-bold">
+                             {uploadingField === 'splashImage' ? '...' : 'UPLOAD SPLASH IMAGE'}
+                             <input type="file" className="hidden" onChange={e => handleFileUpload(e, 'splashImage', setSplashForm, splashForm)} />
+                          </label>
+                       </div>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          </>
-        )}
-
-        {/* Coverflow Gallery Tab */}
-        {activeTab === 'coverflow' && (
-          <>
-            <h2 className="text-xl font-bold text-white bg-[#7a1022] p-3 rounded-t">Moments Coverflow (5 Images)</h2>
-            <div className="space-y-4 border border-white/10 p-4 rounded bg-[#100c0c]">
-              {['image1', 'image2', 'image3', 'image4', 'image5'].map((fieldName, i) => (
-                <div key={fieldName}>
-                  <label className="block text-xs mb-1 mt-4">Gallery Image {i + 1}</label>
-                  <div className="flex gap-4 items-center">
-                    <input 
-                      type="text" name={fieldName} value={coverflowForm[fieldName as keyof CoverflowGalleryContent]} onChange={handleCoverflowChange} 
-                      className="flex-1 bg-black/50 border border-white/20 p-2 text-white rounded"
-                    />
-                    <input type="file" accept="image/*,video/*" onChange={(e) => handleFileUpload(e, fieldName, 'coverflow')} className="hidden" id={`upload-cover-${fieldName}`} />
-                    <label htmlFor={`upload-cover-${fieldName}`} className="bg-white/10 hover:bg-white/20 px-4 py-2 cursor-pointer rounded whitespace-nowrap">
-                      {uploadingField === fieldName ? 'Uploading...' : 'Upload'}
-                    </label>
+                </section>
+                <button onClick={() => handleSave('splashScreen', splashForm)} className="bg-white text-black px-10 py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-pink-500 hover:text-white transition-all shadow-2xl">Save Changes</button>
+              </motion.div>
+            )}
+            {activeTab === 'hero' && heroForm && (
+              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="max-w-4xl mx-auto space-y-12">
+                <section className="space-y-6">
+                  <h2 className="text-2xl font-bold flex items-center gap-4">Hero Page Settings <div className="h-px flex-1 bg-white/10" /></h2>
+                  <div className="grid grid-cols-1 gap-8">
+                    <div className="space-y-4">
+                      <label className="text-[10px] uppercase tracking-widest text-white/40">Hero Top Text</label>
+                      <textarea value={heroForm.topText} onChange={e => setHeroForm({...heroForm, topText: e.target.value})} className="w-full bg-[#2d2a28] border border-white/10 rounded-xl px-4 py-3 min-h-[100px]" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-6">
+                       <div className="space-y-2">
+                          <label className="text-[10px] uppercase tracking-widest text-white/40">Main Heading 1 (Happy)</label>
+                          <input type="text" value={heroForm.middleHeading1} onChange={e => setHeroForm({...heroForm, middleHeading1: e.target.value})} className="w-full bg-[#2d2a28] border border-white/10 rounded-xl px-4 py-3" />
+                       </div>
+                       <div className="space-y-2">
+                          <label className="text-[10px] uppercase tracking-widest text-white/40">Main Heading 2 (Birthday)</label>
+                          <input type="text" value={heroForm.middleHeading2} onChange={e => setHeroForm({...heroForm, middleHeading2: e.target.value})} className="w-full bg-[#2d2a28] border border-white/10 rounded-xl px-4 py-3" />
+                       </div>
+                    </div>
+                    {/* Image Uploads for Hero */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {['topImage', 'bgMiddleImage', 'middleImageLeft', 'middleImageRight', 'bottomImage'].map((field) => (
+                        <div key={field} className="space-y-2">
+                          <label className="text-[10px] uppercase tracking-widest text-white/40">{field}</label>
+                          <div className="relative group aspect-square rounded-xl overflow-hidden bg-black/40 border border-white/5">
+                             <img src={(heroForm as any)[field]} className="w-full h-full object-cover opacity-50 group-hover:opacity-100 transition-opacity" />
+                             <label className="absolute inset-0 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 text-xs font-bold">
+                                {uploadingField === field ? '...' : 'CHANGE'}
+                                <input type="file" className="hidden" onChange={e => handleFileUpload(e, field, setHeroForm, heroForm)} />
+                             </label>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  {coverflowForm[fieldName as keyof CoverflowGalleryContent] && <img src={coverflowForm[fieldName as keyof CoverflowGalleryContent]} className="h-16 object-cover mt-2 rounded border border-white/10" alt="Preview"/>}
-                </div>
-              ))}
-            </div>
-          </>
-        )}
+                </section>
+                <button onClick={() => handleSave('scrapbookHero', heroForm)} className="bg-white text-black px-10 py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-pink-500 hover:text-white transition-all shadow-2xl">Save Changes</button>
+              </motion.div>
+            )}
 
-        {/* Archive Tab */}
-        {activeTab === 'archive' && (
-          <>
-            <h2 className="text-xl font-bold text-white bg-[#7a1022] p-3 rounded-t">Archive Section Settings</h2>
-            
-            <div className="space-y-4 border border-white/10 p-4 rounded bg-[#100c0c]">
-              <h3 className="font-bold text-[#f3d4d6]">Header</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs mb-1">Section Heading</label>
-                  <input type="text" name="sectionHeading" value={archiveForm.sectionHeading} onChange={handleArchiveChange} className="w-full bg-black/50 border border-white/20 p-2 text-white rounded" />
-                </div>
-                <div>
-                  <label className="block text-xs mb-1">View All Text</label>
-                  <input type="text" name="viewAllText" value={archiveForm.viewAllText} onChange={handleArchiveChange} className="w-full bg-black/50 border border-white/20 p-2 text-white rounded" />
-                </div>
-              </div>
-            </div>
+            {activeTab === 'split' && splitForm && (
+              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="max-w-4xl mx-auto space-y-12">
+                <section className="space-y-6">
+                  <h2 className="text-2xl font-bold flex items-center gap-4">Split Showcase Settings <div className="h-px flex-1 bg-white/10" /></h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                    {[1, 2, 3, 4].map((num) => (
+                      <div key={num} className="space-y-4 bg-white/5 p-6 rounded-3xl border border-white/5">
+                        <label className="text-[10px] uppercase tracking-widest text-white/40">Card {num}</label>
+                        <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-black/40 mb-4 group">
+                          <img src={(splitForm as any)[`image${num}`]} className="w-full h-full object-cover opacity-50 group-hover:opacity-100 transition-opacity" />
+                          <label className="absolute inset-0 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 text-xs font-bold">
+                             {uploadingField === `image${num}` ? '...' : 'UPLOAD'}
+                             <input type="file" className="hidden" onChange={e => handleFileUpload(e, `image${num}`, setSplitForm, splitForm)} />
+                          </label>
+                        </div>
+                        <input type="text" placeholder="Back Text (Emotional)" value={(splitForm as any)[`backText${num}`]} onChange={e => setSplitForm({...splitForm, [`backText${num}`]: e.target.value})} className="w-full bg-[#2d2a28] border border-white/10 rounded-xl px-4 py-3 text-sm" />
+                        <input type="text" placeholder="Footer Description" value={(splitForm as any)[`desc${num}`]} onChange={e => setSplitForm({...splitForm, [`desc${num}`]: e.target.value})} className="w-full bg-[#2d2a28] border border-white/10 rounded-xl px-4 py-3 text-sm" />
+                      </div>
+                    ))}
+                  </div>
+                </section>
+                <button onClick={() => handleSave('zineSplitShowcase', splitForm)} className="bg-white text-black px-10 py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-pink-500 hover:text-white transition-all shadow-2xl">Save Changes</button>
+              </motion.div>
+            )}
 
-            <div className="space-y-4 border border-white/10 p-4 rounded bg-[#100c0c]">
-              <h3 className="font-bold text-[#f3d4d6]">Left Large Image</h3>
-              <div>
-                <label className="block text-xs mb-1">Left Image</label>
-                <div className="flex gap-4 items-center">
-                  <input type="text" name="leftImage" value={archiveForm.leftImage} onChange={handleArchiveChange} className="flex-1 bg-black/50 border border-white/20 p-2 text-white rounded" />
-                  <input type="file" accept="image/*,video/*" onChange={(e) => handleFileUpload(e as any, 'leftImage', 'archive' as any)} className="hidden" id="upload-archive-leftImage" />
-                  <label htmlFor="upload-archive-leftImage" className="bg-white/10 hover:bg-white/20 px-4 py-2 cursor-pointer rounded whitespace-nowrap">
-                    {uploadingField === 'leftImage' ? 'Uploading...' : 'Upload'}
-                  </label>
-                </div>
-                {archiveForm.leftImage && <img src={archiveForm.leftImage} className="h-16 object-cover mt-2 rounded border border-white/10" alt="Preview"/>}
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs mb-1">Image Name</label>
-                  <input type="text" name="leftImageName" value={archiveForm.leftImageName} onChange={handleArchiveChange} className="w-full bg-black/50 border border-white/20 p-2 text-white rounded" />
-                </div>
-                <div>
-                  <label className="block text-xs mb-1">Image Status</label>
-                  <input type="text" name="leftImageStatus" value={archiveForm.leftImageStatus} onChange={handleArchiveChange} className="w-full bg-black/50 border border-white/20 p-2 text-white rounded" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs mb-1">Sticky Note Text</label>
-                <input type="text" name="stickyNoteText" value={archiveForm.stickyNoteText} onChange={handleArchiveChange} className="w-full bg-black/50 border border-white/20 p-2 text-white rounded" />
-              </div>
-            </div>
+            {activeTab === 'archive' && archiveForm && (
+              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="max-w-4xl mx-auto space-y-12">
+                <section className="space-y-6">
+                  <h2 className="text-2xl font-bold flex items-center gap-4">Archive Section Settings <div className="h-px flex-1 bg-white/10" /></h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                      <label className="text-[10px] uppercase tracking-widest text-white/40">Section Heading</label>
+                      <input type="text" value={archiveForm.sectionHeading} onChange={e => setArchiveForm({...archiveForm, sectionHeading: e.target.value})} className="w-full bg-[#2d2a28] border border-white/10 rounded-xl px-4 py-3" />
+                    </div>
+                    <div className="space-y-4">
+                      <label className="text-[10px] uppercase tracking-widest text-white/40">Sticky Note Text</label>
+                      <textarea value={archiveForm.stickyNoteText} onChange={e => setArchiveForm({...archiveForm, stickyNoteText: e.target.value})} className="w-full bg-[#2d2a28] border border-white/10 rounded-xl px-4 py-3 min-h-[100px]" />
+                    </div>
+                    
+                    {/* Image Fields */}
+                    {['leftImage', 'rightImage'].map((field) => (
+                      <div key={field} className="space-y-4 bg-white/5 p-6 rounded-3xl border border-white/5">
+                        <label className="text-[10px] uppercase tracking-widest text-white/40">{field.replace('Image', ' Picture')}</label>
+                        <div className="relative aspect-[4/5] rounded-xl overflow-hidden bg-black/40 mb-4 group">
+                           <img src={(archiveForm as any)[field]} className="w-full h-full object-cover opacity-50 group-hover:opacity-100 transition-opacity" />
+                           <label className="absolute inset-0 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 text-xs font-bold">
+                              {uploadingField === field ? '...' : 'CHANGE'}
+                              <input type="file" className="hidden" onChange={e => handleFileUpload(e, field, setArchiveForm, archiveForm)} />
+                           </label>
+                        </div>
+                        <input type="text" placeholder="Title/Name" value={(archiveForm as any)[field + 'Name']} onChange={e => setArchiveForm({...archiveForm, [field + 'Name']: e.target.value})} className="w-full bg-[#2d2a28] border border-white/10 rounded-xl px-4 py-3 text-sm" />
+                      </div>
+                    ))}
+                  </div>
+                </section>
+                <button onClick={() => handleSave('zineArchive', archiveForm)} className="bg-white text-black px-10 py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-pink-500 hover:text-white transition-all shadow-2xl">Save Changes</button>
+              </motion.div>
+            )}
 
-            <div className="space-y-4 border border-white/10 p-4 rounded bg-[#100c0c]">
-              <h3 className="font-bold text-[#f3d4d6]">Right Small Image</h3>
-              <div>
-                <label className="block text-xs mb-1">Right Image</label>
-                <div className="flex gap-4 items-center">
-                  <input type="text" name="rightImage" value={archiveForm.rightImage} onChange={handleArchiveChange} className="flex-1 bg-black/50 border border-white/20 p-2 text-white rounded" />
-                  <input type="file" accept="image/*,video/*" onChange={(e) => handleFileUpload(e as any, 'rightImage', 'archive' as any)} className="hidden" id="upload-archive-rightImage" />
-                  <label htmlFor="upload-archive-rightImage" className="bg-white/10 hover:bg-white/20 px-4 py-2 cursor-pointer rounded whitespace-nowrap">
-                    {uploadingField === 'rightImage' ? 'Uploading...' : 'Upload'}
-                  </label>
-                </div>
-                {archiveForm.rightImage && <img src={archiveForm.rightImage} className="h-16 object-cover mt-2 rounded border border-white/10" alt="Preview"/>}
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs mb-1">Image Name</label>
-                  <input type="text" name="rightImageName" value={archiveForm.rightImageName} onChange={handleArchiveChange} className="w-full bg-black/50 border border-white/20 p-2 text-white rounded" />
-                </div>
-                <div>
-                  <label className="block text-xs mb-1">Image Date</label>
-                  <input type="text" name="rightImageDate" value={archiveForm.rightImageDate} onChange={handleArchiveChange} className="w-full bg-black/50 border border-white/20 p-2 text-white rounded" />
-                </div>
-              </div>
-            </div>
+            {activeTab === 'coverflow' && coverflowForm && (
+              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="max-w-4xl mx-auto space-y-12">
+                <section className="space-y-6">
+                  <h2 className="text-2xl font-bold flex items-center gap-4">Photo Slider (Coverflow) <div className="h-px flex-1 bg-white/10" /></h2>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    {[1, 2, 3, 4, 5].map((num) => (
+                      <div key={num} className="space-y-2">
+                        <label className="text-[10px] uppercase tracking-widest text-white/40">Slide {num}</label>
+                        <div className="relative aspect-[4/5] rounded-xl overflow-hidden bg-black/40 border border-white/5 group">
+                           <img src={(coverflowForm as any)[`image${num}`]} className="w-full h-full object-cover opacity-50 group-hover:opacity-100 transition-opacity" />
+                           <label className="absolute inset-0 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 text-[10px] font-bold">
+                              {uploadingField === `image${num}` ? '...' : 'UPLOAD'}
+                              <input type="file" className="hidden" onChange={e => handleFileUpload(e, `image${num}`, setCoverflowForm, coverflowForm)} />
+                           </label>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+                <button onClick={() => handleSave('coverflowGallery', coverflowForm)} className="bg-white text-black px-10 py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-pink-500 hover:text-white transition-all shadow-2xl">Save Changes</button>
+              </motion.div>
+            )}
 
-            <div className="space-y-4 border border-white/10 p-4 rounded bg-[#100c0c]">
-              <h3 className="font-bold text-[#f3d4d6]">Submit Form</h3>
-              <div>
-                <label className="block text-xs mb-1">Form Heading</label>
-                <input type="text" name="formHeading" value={archiveForm.formHeading} onChange={handleArchiveChange} className="w-full bg-black/50 border border-white/20 p-2 text-white rounded" />
-              </div>
-              <div>
-                <label className="block text-xs mb-1">Form Description</label>
-                <textarea name="formDesc" value={archiveForm.formDesc} onChange={handleArchiveChange} className="w-full bg-black/50 border border-white/20 p-2 text-white rounded min-h-[60px]" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs mb-1">Placeholder</label>
-                  <input type="text" name="formPlaceholder" value={archiveForm.formPlaceholder} onChange={handleArchiveChange} className="w-full bg-black/50 border border-white/20 p-2 text-white rounded" />
-                </div>
-                <div>
-                  <label className="block text-xs mb-1">Button Text</label>
-                  <input type="text" name="formBtnText" value={archiveForm.formBtnText} onChange={handleArchiveChange} className="w-full bg-black/50 border border-white/20 p-2 text-white rounded" />
-                </div>
-              </div>
-            </div>
-          </>
-        )}
+            {activeTab === 'gift' && giftForm && (
+              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="max-w-4xl mx-auto space-y-12">
+                <section className="space-y-6">
+                  <h2 className="text-2xl font-bold flex items-center gap-4">The Surprise Sequence <div className="h-px flex-1 bg-white/10" /></h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                       <label className="text-[10px] uppercase tracking-widest text-white/40">Letter Title</label>
+                       <input type="text" value={giftForm.letterTitle} onChange={e => setGiftForm({...giftForm, letterTitle: e.target.value})} className="w-full bg-[#2d2a28] border border-white/10 rounded-xl px-4 py-3" />
+                    </div>
+                    <div className="space-y-4">
+                       <label className="text-[10px] uppercase tracking-widest text-white/40">CTA Button Text</label>
+                       <input type="text" value={giftForm.ctaText} onChange={e => setGiftForm({...giftForm, ctaText: e.target.value})} className="w-full bg-[#2d2a28] border border-white/10 rounded-xl px-4 py-3" />
+                    </div>
+                    <div className="md:col-span-2 space-y-4">
+                       <label className="text-[10px] uppercase tracking-widest text-white/40">Letter Body</label>
+                       <textarea value={giftForm.letterBody} onChange={e => setGiftForm({...giftForm, letterBody: e.target.value})} className="w-full bg-[#2d2a28] border border-white/10 rounded-xl px-4 py-3 min-h-[150px]" />
+                    </div>
+                    <div className="space-y-4">
+                       <label className="text-[10px] uppercase tracking-widest text-white/40">Gift Type</label>
+                       <select value={giftForm.giftType} onChange={e => setGiftForm({...giftForm, giftType: e.target.value as any})} className="w-full bg-[#2d2a28] border border-white/10 rounded-xl px-4 py-3">
+                          <option value="video">Video</option>
+                          <option value="photo">Photo</option>
+                       </select>
+                    </div>
+                    <div className="space-y-4">
+                       <label className="text-[10px] uppercase tracking-widest text-white/40">Gift Video (Direct Upload or URL)</label>
+                       <div className="flex gap-2">
+                          <input type="text" value={giftForm.giftUrl} onChange={e => setGiftForm({...giftForm, giftUrl: e.target.value})} placeholder="Video URL..." className="flex-1 bg-[#2d2a28] border border-white/10 rounded-xl px-4 py-3" />
+                          <label className="bg-white/10 hover:bg-white/20 px-6 py-3 rounded-xl cursor-pointer font-bold text-xs flex items-center transition-all border border-white/5">
+                             {uploadingField === 'giftVideo' ? '...' : 'UPLOAD'}
+                             <input type="file" className="hidden" accept="video/*" onChange={e => handleFileUpload(e, 'giftUrl', setGiftForm, giftForm)} />
+                          </label>
+                       </div>
+                    </div>
 
-        <button 
-          type="submit" 
-          disabled={isLoading || uploadingField !== null}
-          className="w-full bg-[#7a1022] hover:bg-red-800 text-white font-bold py-4 rounded transition-colors disabled:opacity-50"
-        >
-          {isLoading ? 'Saving...' : `Save ${activeTab.toUpperCase()} to Live Site`}
-        </button>
-      </form>
+                    <div className="md:col-span-2 space-y-6">
+                       <h3 className="text-sm font-bold uppercase tracking-widest text-white/40 border-b border-white/5 pb-2">Interaction Details</h3>
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                          <div className="space-y-4">
+                             <label className="text-[10px] uppercase tracking-widest text-white/40">Ready? Prompt Sticker</label>
+                             <div className="relative aspect-square w-32 rounded-xl overflow-hidden bg-black/40 border border-white/5 group">
+                                <img src={giftForm.questions[0]?.sticker} className="w-full h-full object-contain opacity-50 group-hover:opacity-100 transition-opacity" />
+                                <label className="absolute inset-0 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 text-[10px] font-bold">
+                                   {uploadingField === 'promptSticker' ? '...' : 'SET'}
+                                   <input type="file" className="hidden" onChange={async (e) => {
+                                      const file = e.target.files?.[0];
+                                      if (!file) return;
+                                      setUploadingField('promptSticker');
+                                      const formData = new FormData();
+                                      formData.append('file', file);
+                                      const res = await fetch(`${API_URL}/api/cms/upload`, { method: 'POST', body: formData });
+                                      const data = await res.json();
+                                      const newQuestions = [...giftForm.questions];
+                                      newQuestions[0] = { ...newQuestions[0], sticker: data.url };
+                                      setGiftForm({ ...giftForm, questions: newQuestions });
+                                      setUploadingField(null);
+                                   }} />
+                                </label>
+                             </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                             {['happyStickers', 'sadStickers'].map(field => (
+                                <div key={field} className="space-y-2">
+                                   <label className="text-[10px] uppercase tracking-widest text-white/40">{field === 'happyStickers' ? 'Happy Sticker' : 'Sad Sticker'}</label>
+                                   <div className="relative aspect-square rounded-xl overflow-hidden bg-black/40 border border-white/5 group">
+                                      <img src={(giftForm as any)[field]?.[0]} className="w-full h-full object-contain opacity-50 group-hover:opacity-100 transition-opacity" />
+                                      <label className="absolute inset-0 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 text-[10px] font-bold">
+                                         {uploadingField === field ? '...' : 'SET'}
+                                         <input type="file" className="hidden" onChange={async (e) => {
+                                            const file = e.target.files?.[0];
+                                            if (!file) return;
+                                            setUploadingField(field);
+                                            const formData = new FormData();
+                                            formData.append('file', file);
+                                            const res = await fetch(`${API_URL}/api/cms/upload`, { method: 'POST', body: formData });
+                                            const data = await res.json();
+                                            setGiftForm({ ...giftForm, [field]: [data.url] });
+                                            setUploadingField(null);
+                                         }} />
+                                      </label>
+                                   </div>
+                                </div>
+                             ))}
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                             {['questionBgImageLeft', 'questionBgImageRight'].map(field => (
+                                <div key={field} className="space-y-2">
+                                   <label className="text-[10px] uppercase tracking-widest text-white/40">{field.includes('Left') ? 'Quiz BG Polaroid (Left)' : 'Quiz BG Polaroid (Right)'}</label>
+                                   <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-black/40 border border-white/5 group">
+                                      <img src={(giftForm as any)[field]} className="w-full h-full object-cover opacity-50 group-hover:opacity-100 transition-opacity" />
+                                      <label className="absolute inset-0 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 text-[10px] font-bold text-center p-2">
+                                         {uploadingField === field ? '...' : 'SET POLAROID'}
+                                         <input type="file" className="hidden" onChange={e => handleFileUpload(e, field, setGiftForm, giftForm)} />
+                                      </label>
+                                   </div>
+                                </div>
+                             ))}
+                          </div>
+                          <div className="space-y-4">
+                             <label className="text-[10px] uppercase tracking-widest text-white/40">Post-Video Alert Sticker</label>
+                             <div className="relative aspect-square w-32 rounded-xl overflow-hidden bg-black/40 border border-white/5 group">
+                                <img src={giftForm.giftAlertSticker} className="w-full h-full object-contain opacity-50 group-hover:opacity-100 transition-opacity" />
+                                <label className="absolute inset-0 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 text-[10px] font-bold">
+                                   {uploadingField === 'giftAlertSticker' ? '...' : 'SET'}
+                                   <input type="file" className="hidden" onChange={e => handleFileUpload(e, 'giftAlertSticker', setGiftForm, giftForm)} />
+                                </label>
+                             </div>
+                          </div>
+                       </div>
+                    </div>
+                  </div>
+                </section>
+                <button onClick={() => handleSave('giftSequence', giftForm)} className="bg-white text-black px-10 py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-pink-500 hover:text-white transition-all shadow-2xl">Save Changes</button>
+              </motion.div>
+            )}
+
+            {activeTab === 'memories' && memoriesForm && (
+              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="max-w-4xl mx-auto space-y-12">
+                <section className="space-y-6">
+                  <h2 className="text-2xl font-bold flex items-center gap-4">TV & Polaroids <div className="h-px flex-1 bg-white/10" /></h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                    <div className="space-y-4">
+                       <label className="text-[10px] uppercase tracking-widest text-white/40">TV Content Type</label>
+                       <select value={memoriesForm.tvType} onChange={e => setMemoriesForm({...memoriesForm, tvType: e.target.value as any})} className="w-full bg-[#2d2a28] border border-white/10 rounded-xl px-4 py-3">
+                          <option value="video">Single Video</option>
+                          <option value="slideshow">Slideshow</option>
+                       </select>
+                    </div>
+                    <div className="space-y-4">
+                       <label className="text-[10px] uppercase tracking-widest text-white/40">TV Video (Direct Upload or URL)</label>
+                       <div className="flex gap-2">
+                          <input type="text" value={memoriesForm.tvVideoUrl} onChange={e => setMemoriesForm({...memoriesForm, tvVideoUrl: e.target.value})} placeholder="Video URL..." className="flex-1 bg-[#2d2a28] border border-white/10 rounded-xl px-4 py-3" />
+                          <label className="bg-white/10 hover:bg-white/20 px-6 py-3 rounded-xl cursor-pointer font-bold text-xs flex items-center transition-all border border-white/5">
+                             {uploadingField === 'tvVideo' ? '...' : 'UPLOAD'}
+                             <input type="file" className="hidden" accept="video/*" onChange={e => handleFileUpload(e, 'tvVideoUrl', setMemoriesForm, memoriesForm)} />
+                          </label>
+                       </div>
+                    </div>
+
+                    {memoriesForm.tvType === 'slideshow' && (
+                       <div className="md:col-span-2 space-y-4">
+                          <label className="text-[10px] uppercase tracking-widest text-white/40">Slideshow Images (Max 5)</label>
+                          <div className="grid grid-cols-5 gap-4">
+                             {[0, 1, 2, 3, 4].map(idx => (
+                                <div key={idx} className="relative aspect-video rounded-xl overflow-hidden bg-black/40 border border-white/5 group">
+                                   <img src={memoriesForm.tvSlideshowImages[idx]} className="w-full h-full object-cover opacity-50 group-hover:opacity-100 transition-opacity" />
+                                   <label className="absolute inset-0 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 text-[10px] font-bold">
+                                      {uploadingField === `slideshow-${idx}` ? '...' : '+'}
+                                      <input type="file" className="hidden" onChange={async (e) => {
+                                         const file = e.target.files?.[0];
+                                         if (!file) return;
+                                         setUploadingField(`slideshow-${idx}`);
+                                         const formData = new FormData();
+                                         formData.append('file', file);
+                                         const res = await fetch(`${API_URL}/api/cms/upload`, { method: 'POST', body: formData });
+                                         const data = await res.json();
+                                         const newImages = [...memoriesForm.tvSlideshowImages];
+                                         newImages[idx] = data.url;
+                                         setMemoriesForm({ ...memoriesForm, tvSlideshowImages: newImages });
+                                         setUploadingField(null);
+                                      }} />
+                                   </label>
+                                </div>
+                             ))}
+                          </div>
+                       </div>
+                    )}
+                  </div>
+
+                  <h3 className="text-lg font-bold mb-6">Polaroid Archive (Max 7)</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {memoriesForm.polaroids.map((p, i) => (
+                      <div key={i} className="bg-white/5 p-6 rounded-3xl border border-white/5 flex gap-6 items-center">
+                        <div className="w-24 aspect-[4/5] bg-white p-1 shadow-xl relative shrink-0">
+                           <img src={p.url} className="w-full h-full object-cover" />
+                           <label className="absolute inset-0 flex items-center justify-center cursor-pointer bg-black/40 opacity-0 hover:opacity-100 transition-opacity text-[10px] font-bold">
+                              {uploadingField === `p-${i}` ? '...' : 'SET'}
+                              <input type="file" className="hidden" onChange={async (e) => {
+                                 const file = e.target.files?.[0];
+                                 if (!file) return;
+                                 setUploadingField(`p-${i}`);
+                                 const formData = new FormData();
+                                 formData.append('file', file);
+                                 const res = await fetch(`${API_URL}/api/cms/upload`, { method: 'POST', body: formData });
+                                 const data = await res.json();
+                                 const newPolaroids = [...memoriesForm.polaroids];
+                                 newPolaroids[i] = { ...newPolaroids[i], url: data.url };
+                                 setMemoriesForm({ ...memoriesForm, polaroids: newPolaroids });
+                                 setUploadingField(null);
+                              }} />
+                           </label>
+                        </div>
+                        <div className="flex-1 space-y-4">
+                           <textarea value={p.text} onChange={e => {
+                             const newPolaroids = [...memoriesForm.polaroids];
+                             newPolaroids[i] = { ...newPolaroids[i], text: e.target.value };
+                             setMemoriesForm({ ...memoriesForm, polaroids: newPolaroids });
+                           }} placeholder="Memory description..." className="w-full bg-black/20 border border-white/10 rounded-xl px-3 py-2 text-xs h-24" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+                <button onClick={() => handleSave('memories', memoriesForm)} className="bg-white text-black px-10 py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-pink-500 hover:text-white transition-all shadow-2xl">Save Changes</button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
     </div>
   );
 };

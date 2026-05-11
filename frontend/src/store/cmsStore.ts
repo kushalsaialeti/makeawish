@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-// Define the shape of our CMS content for the scrapbook hero
+// --- Interfaces (Same as before but nested in a single object) ---
 export interface ScrapbookHeroContent {
   topImage: string;
   topText: string;
@@ -13,7 +13,6 @@ export interface ScrapbookHeroContent {
   bottomImage: string;
 }
 
-// Define the shape of our CMS content for the splash screen
 export interface SplashScreenContent {
   targetDate: string;
   correctMonth: string;
@@ -22,29 +21,39 @@ export interface SplashScreenContent {
   promptHeading: string;
   btnNowText: string;
   btnLaterText: string;
+  recipientName: string;
+  clockText: string;
+  splashImage: string;
+}
+
+export interface QuestionOption { text: string; isCorrect: boolean; }
+export interface QuestionStep { id: string; sticker: string; question: string; options: QuestionOption[]; }
+
+export interface GiftSequenceContent {
+  questions: QuestionStep[];
+  giftType: 'video' | 'photo';
+  giftUrl: string;
+  giftAlertSticker: string;
+  happyStickers: string[];
+  sadStickers: string[];
+  letterTitle: string;
+  letterBody: string;
+  letterFooter: string;
+  ctaText: string;
+  promptSticker: string;
+  questionBgImageLeft: string;
+  questionBgImageRight: string;
 }
 
 export interface ZineSplitShowcaseContent {
-  image1: string;
-  backText1: string;
-  desc1: string;
-  image2: string;
-  backText2: string;
-  desc2: string;
-  image3: string;
-  backText3: string;
-  desc3: string;
-  image4: string;
-  backText4: string;
-  desc4: string;
+  image1: string; backText1: string; desc1: string;
+  image2: string; backText2: string; desc2: string;
+  image3: string; backText3: string; desc3: string;
+  image4: string; backText4: string; desc4: string;
 }
 
 export interface CoverflowGalleryContent {
-  image1: string;
-  image2: string;
-  image3: string;
-  image4: string;
-  image5: string;
+  image1: string; image2: string; image3: string; image4: string; image5: string;
 }
 
 export interface ZineArchiveContent {
@@ -63,191 +72,210 @@ export interface ZineArchiveContent {
   formBtnText: string;
 }
 
+export interface PolaroidItem { url: string; text: string; }
+export interface MemoriesContent {
+  tvType: 'video' | 'slideshow';
+  tvVideoUrl: string;
+  tvSlideshowImages: string[];
+  polaroids: PolaroidItem[];
+}
+
+export interface WishData {
+  id: string;
+  slug: string;
+  recipient_name: string;
+  is_published: boolean;
+  content: {
+    scrapbookHero?: ScrapbookHeroContent;
+    splashScreen?: SplashScreenContent;
+    zineSplitShowcase?: ZineSplitShowcaseContent;
+    coverflowGallery?: CoverflowGalleryContent;
+    zineArchive?: ZineArchiveContent;
+    giftSequence?: GiftSequenceContent;
+    memories?: MemoriesContent;
+  };
+}
+
 export interface CmsState {
+  // Current active wish data
+  currentWishId: string | null;
+  currentWishSlug: string | null;
+  
+  // Individual components (mapped from currentWish.content)
   scrapbookHero: ScrapbookHeroContent | null;
   splashScreen: SplashScreenContent | null;
   zineSplitShowcase: ZineSplitShowcaseContent | null;
   coverflowGallery: CoverflowGalleryContent | null;
   zineArchive: ZineArchiveContent | null;
+  giftSequence: GiftSequenceContent | null;
+  memories: MemoriesContent | null;
+  
   isLoading: boolean;
   error: string | null;
-  fetchCmsContent: () => Promise<void>;
-  updateScrapbookHero: (content: Partial<ScrapbookHeroContent>) => Promise<void>;
-  updateSplashScreen: (content: Partial<SplashScreenContent>) => Promise<void>;
-  updateZineSplitShowcase: (content: Partial<ZineSplitShowcaseContent>) => Promise<void>;
-  updateCoverflowGallery: (content: Partial<CoverflowGalleryContent>) => Promise<void>;
-  updateZineArchive: (content: Partial<ZineArchiveContent>) => Promise<void>;
+  isSplashCompleted: boolean;
+
+  // Actions
+  fetchWishBySlug: (slug: string) => Promise<void>;
+  fetchWishById: (id: string) => Promise<void>;
+  createWish: (slug: string, name: string) => Promise<string>;
+  updateSection: (section: keyof WishData['content'], content: any) => Promise<void>;
+  setSplashCompleted: (completed: boolean) => void;
 }
 
-// Default fallback content in case DB is empty
+// --- Defaults ---
 const defaultSplashScreen: SplashScreenContent = {
-  targetDate: '2026-12-31T00:00:00',
-  correctMonth: '12',
-  correctDay: '25',
-  correctYear: '2000',
-  promptHeading: 'A surprise awaits.',
-  btnNowText: 'Open Now',
-  btnLaterText: 'Later'
+  targetDate: '2026-12-31T00:00:00', correctMonth: '12', correctDay: '25', correctYear: '2000',
+  promptHeading: 'A surprise awaits.', btnNowText: 'Open Now', btnLaterText: 'Later',
+  recipientName: 'Beautiful', clockText: 'TIME IS TICKING',
+  splashImage: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=1200',
 };
+
 const defaultScrapbookHero: ScrapbookHeroContent = {
-  topImage: 'https://images.unsplash.com/photo-1517849845537-4d257902454a?q=80&w=1200&auto=format&fit=crop',
+  topImage: 'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=1200',
   topText: 'May your birthday be filled with joy, blessings, and endless happiness.',
-  bgMiddleImage: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1200&auto=format&fit=crop',
-  middleHeading1: 'Happy',
-  middleHeading2: 'Birthday',
-  middleImageLeft: 'https://images.unsplash.com/photo-1520813792240-56fc4a3765a7?q=80&w=600&auto=format&fit=crop',
-  middleImageRight: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600&auto=format&fit=crop',
+  bgMiddleImage: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1200',
+  middleHeading1: 'Happy', middleHeading2: 'Birthday',
+  middleImageLeft: 'https://images.unsplash.com/photo-1520813792240-56fc4a3765a7?w=600',
+  middleImageRight: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600',
   middleBottomText: 'Wish you all the best',
-  bottomImage: 'https://images.unsplash.com/photo-1502323777036-f4dd8c6b7582?q=80&w=1200&auto=format&fit=crop',
+  bottomImage: 'https://images.unsplash.com/photo-1502323777036-f4dd8c6b7582?w=1200',
 };
 
 const defaultZineSplitShowcase: ZineSplitShowcaseContent = {
-  image1: 'https://images.unsplash.com/photo-1514315384763-ba401779410f?q=80&w=800&auto=format&fit=crop',
-  backText1: 'I CAN ALWAYS MAKE YOU SMILE',
-  desc1: 'A moment of pure joy and endless laughter.',
-  image2: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963?q=80&w=800&auto=format&fit=crop',
-  backText2: 'HAPPY BIRTHDAY',
-  desc2: 'Celebrating you today and always.',
-  image3: 'https://images.unsplash.com/photo-1520113412048-285b0d0dc522?q=80&w=800&auto=format&fit=crop',
-  backText3: 'LOVE TO TEASE YOU!',
-  desc3: 'Because annoying you is my favorite hobby.',
-  image4: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=800&auto=format&fit=crop',
-  backText4: "YOU'RE AMAZING AND I LOVE YOU.",
-  desc4: 'More than words can ever say.',
+  image1: 'https://images.unsplash.com/photo-1514315384763-ba401779410f?w=800', backText1: 'I CAN ALWAYS MAKE YOU SMILE', desc1: 'A moment of laughter.',
+  image2: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963?w=800', backText2: 'HAPPY BIRTHDAY', desc2: 'Celebrating you.',
+  image3: 'https://images.unsplash.com/photo-1520113412048-285b0d0dc522?w=800', backText3: 'LOVE TO TEASE YOU!', desc3: 'My favorite hobby.',
+  image4: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800', backText4: 'FOREVER MOMENTS', desc4: 'Every second is a treasure.',
 };
 
 const defaultCoverflowGallery: CoverflowGalleryContent = {
-  image1: 'https://images.unsplash.com/photo-1511895426328-dc8714191300?q=80&w=800&auto=format&fit=crop',
-  image2: 'https://images.unsplash.com/photo-1527529482837-4698179dc6ce?q=80&w=800&auto=format&fit=crop',
-  image3: 'https://images.unsplash.com/photo-1519750783826-e2420f4d687f?q=80&w=800&auto=format&fit=crop',
-  image4: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?q=80&w=800&auto=format&fit=crop',
-  image5: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?q=80&w=800&auto=format&fit=crop',
+  image1: 'https://images.unsplash.com/photo-1530103862676-fa390d6259c7',
+  image2: 'https://images.unsplash.com/photo-1464349095431-e9a21285b5f3',
+  image3: 'https://images.unsplash.com/photo-1513151233558-d860c5398176',
+  image4: 'https://images.unsplash.com/photo-1533294160622-d5fece3e080d',
+  image5: 'https://images.unsplash.com/photo-1516627145497-ae6968895b74',
 };
 
 const defaultZineArchive: ZineArchiveContent = {
-  sectionHeading: 'The Archive',
-  viewAllText: 'View All Entries (402)',
-  leftImage: 'https://images.unsplash.com/photo-1516961642265-531546e84af2?q=80&w=1200&auto=format&fit=crop',
-  leftImageName: '001_LOST_FOUND.PNG',
-  leftImageStatus: 'REDACTED',
-  stickyNoteText: '"POLISH IS THE ENEMY OF AUTHENTICITY."',
-  rightImage: 'https://images.unsplash.com/photo-1542038784456-1ea8e935640e?q=80&w=800&auto=format&fit=crop',
-  rightImageName: '002_MIDNIGHT_VOICE.JPG',
-  rightImageDate: 'JULY 26 - 11:32 PM',
-  formHeading: 'Submit Your Truth',
-  formDesc: 'We are collecting fragments of the real. Upload your unedited moments to the permanent archive.',
-  formPlaceholder: 'YOUR_ALIAS',
-  formBtnText: 'GO',
+  sectionHeading: 'MEMORIES ARCHIVE', viewAllText: 'VIEW ALL MEMORIES',
+  leftImage: 'https://images.unsplash.com/photo-1516627145497-ae6968895b74', leftImageName: 'BIRTHDAY BASH', leftImageStatus: 'FEATURED',
+  stickyNoteText: 'Best moments shared together!',
+  rightImage: 'https://images.unsplash.com/photo-1513151233558-d860c5398176', rightImageName: 'SUMMER VIBES', rightImageDate: 'JUNE 2023',
+  formHeading: 'SEND A WISH', formDesc: 'Write something beautiful!', formPlaceholder: 'Your message here...', formBtnText: 'SEND WISH',
+};
+
+const defaultGiftSequence: GiftSequenceContent = {
+  questions: [{ id: '1', sticker: 'https://media.giphy.com/media/3o7TKMGpxPucV53Wnu/giphy.gif', question: 'Ready?', options: [{ text: 'Yes!', isCorrect: true }, { text: 'No', isCorrect: false }] }],
+  giftType: 'video', giftUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', giftAlertSticker: 'https://media.giphy.com/media/3o7TKMGpxPucV53Wnu/giphy.gif',
+  happyStickers: [], sadStickers: [], letterTitle: 'HAPPY BIRTHDAY', letterBody: 'Wishing you the best...', letterFooter: 'Love you!', ctaText: 'More inside...', promptSticker: '',
+  questionBgImageLeft: '', questionBgImageRight: ''
+};
+
+const defaultMemories: MemoriesContent = {
+  tvType: 'slideshow', tvVideoUrl: '', tvSlideshowImages: [],
+  polaroids: Array(7).fill({ url: 'https://images.unsplash.com/photo-1516627145497-ae6968895b74', text: 'A memory...' })
 };
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 export const useCmsStore = create<CmsState>((set, get) => ({
-  scrapbookHero: defaultScrapbookHero,
-  splashScreen: defaultSplashScreen,
-  zineSplitShowcase: defaultZineSplitShowcase,
-  coverflowGallery: defaultCoverflowGallery,
-  zineArchive: defaultZineArchive,
+  currentWishId: null,
+  currentWishSlug: null,
+  scrapbookHero: null,
+  splashScreen: null,
+  zineSplitShowcase: null,
+  coverflowGallery: null,
+  zineArchive: null,
+  giftSequence: null,
+  memories: null,
   isLoading: false,
   error: null,
-  
-  fetchCmsContent: async () => {
-    // Only set loading to true if we don't have data yet, to avoid flickering during polling
-    if (!get().scrapbookHero) set({ isLoading: true, error: null });
-    
+  isSplashCompleted: false,
+
+  fetchWishBySlug: async (slug: string) => {
+    set({ isLoading: true, error: null });
     try {
-      const response = await fetch(`${API_URL}/api/cms`);
-      if (!response.ok) throw new Error('Failed to fetch CMS content');
+      const response = await fetch(`${API_URL}/api/cms/slug/${slug}`);
+      if (!response.ok) throw new Error('Wish not found');
+      const data: WishData = await response.json();
       
-      const data = await response.json();
-      
-      // Map DB content to our state
-      const scrapbookData = data.find((item: any) => item.section_id === 'scrapbook_hero');
-      const splashData = data.find((item: any) => item.section_id === 'splash_screen');
-      const zineSplitData = data.find((item: any) => item.section_id === 'zine_split_showcase');
-      const coverflowData = data.find((item: any) => item.section_id === 'coverflow_gallery');
-      const zineArchiveData = data.find((item: any) => item.section_id === 'zine_archive');
-      
-      // We check JSON stringify to avoid unnecessary state updates if nothing changed
-      if (scrapbookData && scrapbookData.content && JSON.stringify(get().scrapbookHero) !== JSON.stringify(scrapbookData.content)) {
-        set({ scrapbookHero: { ...defaultScrapbookHero, ...scrapbookData.content } });
-      }
-      if (splashData && splashData.content && JSON.stringify(get().splashScreen) !== JSON.stringify(splashData.content)) {
-        set({ splashScreen: { ...defaultSplashScreen, ...splashData.content } });
-      }
-      if (zineSplitData && zineSplitData.content && JSON.stringify(get().zineSplitShowcase) !== JSON.stringify(zineSplitData.content)) {
-        set({ zineSplitShowcase: { ...defaultZineSplitShowcase, ...zineSplitData.content } });
-      }
-      if (coverflowData && coverflowData.content && JSON.stringify(get().coverflowGallery) !== JSON.stringify(coverflowData.content)) {
-        set({ coverflowGallery: { ...defaultCoverflowGallery, ...coverflowData.content } });
-      }
-      if (zineArchiveData && zineArchiveData.content && JSON.stringify(get().zineArchive) !== JSON.stringify(zineArchiveData.content)) {
-        set({ zineArchive: { ...defaultZineArchive, ...zineArchiveData.content } });
-      }
-      
-      set({ isLoading: false });
+      set({
+        currentWishId: data.id,
+        currentWishSlug: data.slug,
+        scrapbookHero: { ...defaultScrapbookHero, ...data.content.scrapbookHero },
+        splashScreen: { ...defaultSplashScreen, ...data.content.splashScreen },
+        zineSplitShowcase: { ...defaultZineSplitShowcase, ...data.content.zineSplitShowcase },
+        coverflowGallery: { ...defaultCoverflowGallery, ...data.content.coverflowGallery },
+        zineArchive: { ...defaultZineArchive, ...data.content.zineArchive },
+        giftSequence: { ...defaultGiftSequence, ...data.content.giftSequence },
+        memories: { ...defaultMemories, ...data.content.memories },
+        isLoading: false
+      });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
     }
   },
 
-  updateScrapbookHero: async (content) => {
-    const currentContent = get().scrapbookHero;
-    const newContent = { ...currentContent, ...content };
-    set({ scrapbookHero: newContent as ScrapbookHeroContent });
+  fetchWishById: async (id: string) => {
+    set({ isLoading: true, error: null });
     try {
-      const response = await fetch(`${API_URL}/api/cms/scrapbook_hero`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: newContent })
+      const response = await fetch(`${API_URL}/api/cms/id/${id}`);
+      if (!response.ok) throw new Error('Wish not found');
+      const data: WishData = await response.json();
+      
+      set({
+        currentWishId: data.id,
+        currentWishSlug: data.slug,
+        scrapbookHero: { ...defaultScrapbookHero, ...data.content.scrapbookHero },
+        splashScreen: { ...defaultSplashScreen, ...data.content.splashScreen },
+        zineSplitShowcase: { ...defaultZineSplitShowcase, ...data.content.zineSplitShowcase },
+        coverflowGallery: { ...defaultCoverflowGallery, ...data.content.coverflowGallery },
+        zineArchive: { ...defaultZineArchive, ...data.content.zineArchive },
+        giftSequence: { ...defaultGiftSequence, ...data.content.giftSequence },
+        memories: { ...defaultMemories, ...data.content.memories },
+        isLoading: false
       });
-      if (!response.ok) throw new Error('Failed to save CMS content');
-    } catch (error: any) { set({ error: error.message }); }
+    } catch (error: any) {
+      set({ error: error.message, isLoading: false });
+    }
   },
 
-  updateSplashScreen: async (content) => {
-    const currentContent = get().splashScreen;
-    const newContent = { ...currentContent, ...content };
-    set({ splashScreen: newContent as SplashScreenContent });
-    try {
-      const response = await fetch(`${API_URL}/api/cms/splash_screen`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: newContent })
-      });
-      if (!response.ok) throw new Error('Failed to save CMS content');
-    } catch (error: any) { set({ error: error.message }); }
+  createWish: async (slug, name) => {
+    set({ isLoading: true });
+    const response = await fetch(`${API_URL}/api/cms`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug, recipient_name: name })
+    });
+    const data = await response.json();
+    set({ isLoading: false });
+    return data.id;
   },
 
-  updateZineSplitShowcase: async (content) => {
-    const currentContent = get().zineSplitShowcase;
-    const newContent = { ...currentContent, ...content };
-    set({ zineSplitShowcase: newContent as ZineSplitShowcaseContent });
-    try {
-      const response = await fetch(`${API_URL}/api/cms/zine_split_showcase`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: newContent })
-      });
-      if (!response.ok) throw new Error('Failed to save CMS content');
-    } catch (error: any) { set({ error: error.message }); }
+  updateSection: async (section, content) => {
+    const id = get().currentWishId;
+    if (!id) return;
+
+    // Local update
+    set({ [section]: content } as any);
+
+    // Persist to DB
+    const currentContent = {
+      scrapbookHero: get().scrapbookHero,
+      splashScreen: get().splashScreen,
+      zineSplitShowcase: get().zineSplitShowcase,
+      coverflowGallery: get().coverflowGallery,
+      zineArchive: get().zineArchive,
+      giftSequence: get().giftSequence,
+      memories: get().memories,
+    };
+
+    await fetch(`${API_URL}/api/cms/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: { ...currentContent, [section]: content } })
+    });
   },
 
-  updateCoverflowGallery: async (content) => {
-    const currentContent = get().coverflowGallery;
-    const newContent = { ...currentContent, ...content };
-    set({ coverflowGallery: newContent as CoverflowGalleryContent });
-    try {
-      const response = await fetch(`${API_URL}/api/cms/coverflow_gallery`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: newContent })
-      });
-      if (!response.ok) throw new Error('Failed to save CMS content');
-    } catch (error: any) { set({ error: error.message }); }
-  },
-
-  updateZineArchive: async (content) => {
-    const currentContent = get().zineArchive;
-    const newContent = { ...currentContent, ...content };
-    set({ zineArchive: newContent as ZineArchiveContent });
-    try {
-      const response = await fetch(`${API_URL}/api/cms/zine_archive`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: newContent })
-      });
-      if (!response.ok) throw new Error('Failed to save CMS content');
-    } catch (error: any) { set({ error: error.message }); }
-  }
+  setSplashCompleted: (completed) => set({ isSplashCompleted: completed }),
 }));

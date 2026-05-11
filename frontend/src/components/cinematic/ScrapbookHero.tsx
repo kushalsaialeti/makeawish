@@ -3,11 +3,7 @@ import { motion } from 'framer-motion';
 import { useCmsStore } from '../../store/cmsStore';
 
 export const ScrapbookHero = () => {
-  const { scrapbookHero, fetchCmsContent } = useCmsStore();
-
-  useEffect(() => {
-    fetchCmsContent();
-  }, [fetchCmsContent]);
+  const { scrapbookHero } = useCmsStore();
 
   if (!scrapbookHero) return null;
 

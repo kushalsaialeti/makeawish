@@ -1,11 +1,26 @@
 import { Router } from 'express';
-import { getCmsContent, updateCmsContent, uploadMedia } from '../controllers/cms.controller';
+import { 
+  getAllWishes, 
+  createWish, 
+  getWishBySlug, 
+  getWishById, 
+  updateWishContent, 
+  uploadMedia 
+} from '../controllers/cms.controller';
 import { upload } from '../middlewares/upload';
 
 const router = Router();
 
-router.get('/', getCmsContent);
+// Admin routes
+router.get('/', getAllWishes);
+router.post('/', createWish);
+router.get('/id/:id', getWishById);
+router.put('/:id', updateWishContent);
+
+// User route (by slug)
+router.get('/slug/:slug', getWishBySlug);
+
+// Shared route
 router.post('/upload', upload.single('file'), uploadMedia);
-router.put('/:section_id', updateCmsContent);
 
 export default router;

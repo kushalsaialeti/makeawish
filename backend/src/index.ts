@@ -9,6 +9,7 @@ const port = process.env.PORT || 3001;
 
 import memoryRoutes from './routes/memory.routes';
 import cmsRoutes from './routes/cms.routes';
+import authRoutes from './routes/auth.routes';
 
 // Middlewares
 app.use(cors({
@@ -46,6 +47,7 @@ setInterval(async () => {
 // Routes
 app.use('/api/memories', memoryRoutes);
 app.use('/api/cms', cmsRoutes);
+app.use('/api/auth', authRoutes);
 
 // Basic Route
 app.get('/', (req: Request, res: Response) => {

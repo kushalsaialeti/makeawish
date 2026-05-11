@@ -1,104 +1,186 @@
-import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { useCmsStore } from '../store/cmsStore';
 
-// We fetch memories from the backend
-interface Memory {
-  id: string;
-  title: string;
-  image_url: string;
-  description: string;
-  created_at: string;
-}
-
-export const Memories = () => {
-  const [memories, setMemories] = useState<Memory[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export const Memories: React.FC = () => {
+  const { memories, currentWishSlug } = useCmsStore();
+  const navigate = useNavigate();
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [flippedIndex, setFlippedIndex] = useState<number | null>(null);
 
   useEffect(() => {
-    const fetchMemories = async () => {
-      try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-        const response = await fetch(`${API_URL}/api/memories`);
-        if (response.ok) {
-          const data = await response.json();
-          setMemories(data);
-        }
-      } catch (error) {
-        console.error('Failed to fetch memories:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchMemories();
-  }, []);
+    if (memories?.tvType === 'slideshow' && memories.tvSlideshowImages && memories.tvSlideshowImages.length > 0) {
+      const timer = setInterval(() => {
+        setCurrentSlide((prev) => (prev + 1) % memories.tvSlideshowImages.length);
+      }, 3000);
+      return () => clearInterval(timer);
+    }
+  }, [memories]);
+
+  if (!memories || !memories.polaroids) return null;
+
+  // We only show the first 7 polaroids as requested
+  const displayPolaroids = memories.polaroids.slice(0, 7);
+
+  const handleBack = () => {
+    if (currentWishSlug) {
+      navigate(`/wish/${currentWishSlug}`);
+    } else {
+      navigate('/');
+    }
+  };
 
   return (
-    <section id="memories" className="relative w-full bg-[#151111] py-24 px-6 md:px-16 overflow-hidden">
-        
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 border-b border-white/10 pb-8">
-          <div>
-            <h2 className="text-5xl md:text-7xl font-black text-[#e6d0d2] tracking-wider uppercase mt-4">
-              All Memories
-            </h2>
+    <div className="min-h-screen bg-[#1c1917] relative overflow-hidden flex flex-col items-center py-12 px-4 md:px-10">
+      {/* Background Image (Decorated Wall with Balloons/Lights) */}
+      <div 
+        className="absolute inset-0 z-0 opacity-40 bg-cover bg-center bg-no-repeat pointer-events-none"
+        style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=2000&auto=format&fit=crop")' }} 
+      />
+      
+      {/* Fairy Lights Effect Overlay */}
+      <div className="absolute top-0 left-0 w-full h-20 z-[2] flex justify-around pointer-events-none overflow-hidden">
+        {[...Array(12)].map((_, i) => (
+          <motion.div
+            key={i}
+            animate={{ opacity: [0.4, 1, 0.4] }}
+            transition={{ repeat: Infinity, duration: 2 + Math.random() * 2 }}
+            className="w-1 h-1 bg-yellow-200 rounded-full shadow-[0_0_10px_#fef08a]"
+            style={{ marginTop: Math.random() * 20 + 'px' }}
+          />
+        ))}
+      </div>
+
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,transparent_20%,#1c1917_90%)] z-[1] pointer-events-none" />
+
+      {/* Navigation: Back to Home */}
+      <div className="fixed top-6 left-6 z-[100]">
+        <motion.button
+          whileHover={{ scale: 1.1, x: -5 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={handleBack}
+          className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full backdrop-blur-xl text-white/80 transition-colors border border-white/20 font-bold uppercase tracking-widest text-[10px] shadow-2xl"
+        >
+          <span className="text-sm">←</span>
+          <span>Back to Site</span>
+        </motion.button>
+      </div>
+
+      {/* Hero Section: Vintage TV */}
+      <div className="relative z-10 w-full max-w-lg mb-16 md:mb-24 mt-10">
+        <div className="relative aspect-[4/3] bg-[#2d2a28] rounded-[2.5rem] p-6 shadow-[0_0_60px_rgba(0,0,0,0.9)] border-[10px] border-[#3f3b39]">
+          <div className="w-full h-full bg-black rounded-[1.8rem] overflow-hidden relative border-4 border-[#1c1917]">
+             {/* TV Scanlines */}
+            <div className="absolute inset-0 pointer-events-none z-20 opacity-30 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%]" />
+            
+            {memories.tvType === 'video' && memories.tvVideoUrl ? (
+              <video 
+                src={memories.tvVideoUrl} 
+                autoPlay muted loop playsInline 
+                className="w-full h-full object-cover grayscale-[0.2]"
+              />
+            ) : (
+              <AnimatePresence mode="wait">
+                <motion.img
+                  key={currentSlide}
+                  src={memories.tvSlideshowImages[currentSlide]}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 1 }}
+                  className="w-full h-full object-cover grayscale-[0.2]"
+                />
+              </AnimatePresence>
+            )}
           </div>
-          <p className="text-xs uppercase tracking-widest text-white/50 max-w-xs mt-6 md:mt-0 leading-relaxed">
-            A growing collection of unedited moments. Real, raw, and beautiful.
-          </p>
+          {/* TV Details */}
+          <div className="absolute right-[-15px] top-1/2 -translate-y-1/2 flex flex-col gap-4">
+            <div className="w-10 h-10 rounded-full bg-[#3f3b39] shadow-inner border-2 border-black/30" />
+            <div className="w-10 h-10 rounded-full bg-[#3f3b39] shadow-inner border-2 border-black/30" />
+            <div className="w-8 h-2 bg-black/40 rounded-full mt-2" />
+          </div>
         </div>
+        {/* Shadow floor */}
+        <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-4/5 h-6 bg-black/40 blur-2xl rounded-full" />
+      </div>
 
-        {/* Loading State */}
-        {isLoading && (
-          <div className="flex justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#7a1022]"></div>
-          </div>
-        )}
-
-        {/* Empty State */}
-        {!isLoading && memories.length === 0 && (
-          <div className="text-center py-20 opacity-50">
-            <p>No memories have been archived yet.</p>
-          </div>
-        )}
-
-        {/* Masonry/Grid Layout */}
-        {!isLoading && memories.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {memories.map((memory, index) => (
-              <motion.div 
-                key={memory.id}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                className="group cursor-pointer"
+      {/* 7 Fixed Polaroids Grid - No Overlap */}
+      <div className="relative z-10 w-full max-w-6xl grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 pb-20">
+        {displayPolaroids.map((item, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, scale: 0.9, rotate: i % 2 === 0 ? -3 : 3 }}
+            animate={{ opacity: 1, scale: 1, rotate: i % 2 === 0 ? -2 : 2 }}
+            transition={{ delay: i * 0.1 }}
+            className={`relative aspect-[4/5] perspective-1000 ${i === 6 ? 'md:col-start-2 md:col-span-1 sm:col-span-2 mx-auto w-full max-w-[280px]' : ''}`}
+          >
+            <motion.div
+              animate={{ rotateY: flippedIndex === i ? 180 : 0 }}
+              transition={{ duration: 0.6, type: 'spring', stiffness: 260, damping: 20 }}
+              className="w-full h-full relative"
+              style={{ transformStyle: 'preserve-3d' }}
+              onClick={() => setFlippedIndex(flippedIndex === i ? null : i)}
+            >
+              {/* Front: Image */}
+              <div 
+                className="absolute inset-0 bg-white p-3 pb-12 shadow-2xl rounded-sm border border-gray-100 cursor-pointer overflow-hidden"
+                style={{ backfaceVisibility: 'hidden' }}
               >
-                <div className="border border-white/10 p-2 bg-[#100c0c] transition-colors duration-500 hover:border-white/30 hover:bg-[#1a1616]">
-                  <div className="aspect-[4/5] overflow-hidden relative">
-                    <img 
-                      src={memory.image_url} 
-                      alt={memory.title} 
-                      className="w-full h-full object-cover filter contrast-125 saturate-50 group-hover:saturate-100 transition-all duration-700 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-6">
-                      <p className="text-sm font-bold uppercase mb-2">{memory.title}</p>
-                      <p className="text-xs text-white/80 line-clamp-3">{memory.description}</p>
-                    </div>
-                  </div>
-                  
-                  {/* Metadata */}
-                  <div className="flex justify-between items-center mt-3 text-[10px] text-white/50 border-t border-white/10 pt-2 uppercase px-1">
-                    <span className="truncate max-w-[60%]">{memory.title}</span>
-                    <span className="text-[#7a1022]">
-                      {new Date(memory.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric'})}
-                    </span>
-                  </div>
+                <div className="w-full h-full bg-gray-50 overflow-hidden rounded-sm relative">
+                  <div className="absolute inset-0 bg-gradient-to-tr from-amber-900/10 via-transparent to-white/10 pointer-events-none" />
+                  <img src={item.url} alt="Memory" className="w-full h-full object-cover sepia-[0.15] contrast-110" />
                 </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
-    </section>
+                {/* Decorative Scotch Tape Effect */}
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-12 h-6 bg-white/20 backdrop-blur-sm border border-white/10 -rotate-3 z-10" />
+                
+                <div className="absolute bottom-3 left-0 w-full text-[11px] text-center text-gray-400 font-serif italic tracking-wide">
+                  Click to Read Note
+                </div>
+              </div>
+
+              {/* Back: Text */}
+              <div 
+                className="absolute inset-0 bg-[#fffef0] p-6 md:p-8 shadow-2xl rounded-sm border border-gray-100 flex flex-col items-center justify-center text-center cursor-pointer"
+                style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+              >
+                <div className="w-8 h-0.5 bg-amber-200/50 mb-6" />
+                <p className="text-amber-950 font-serif italic text-sm md:text-base leading-relaxed overflow-y-auto max-h-[80%] px-2">
+                  "{item.text}"
+                </p>
+                <div className="mt-6 w-8 h-0.5 bg-amber-200/50" />
+              </div>
+            </motion.div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Floating Fairy Lights scattered */}
+      {[...Array(8)].map((_, i) => (
+        <motion.div
+          key={i}
+          animate={{ 
+            y: [0, -10, 0],
+            opacity: [0.2, 0.5, 0.2]
+          }}
+          transition={{ 
+            repeat: Infinity, 
+            duration: 3 + Math.random() * 2,
+            delay: Math.random() * 2
+          }}
+          className="fixed w-2 h-2 bg-yellow-100 rounded-full blur-[2px] z-[3] pointer-events-none"
+          style={{ 
+            left: Math.random() * 100 + '%', 
+            top: Math.random() * 100 + '%' 
+          }}
+        />
+      ))}
+
+      <style>{`
+        .perspective-1000 {
+          perspective: 1000px;
+        }
+      `}</style>
+    </div>
   );
 };

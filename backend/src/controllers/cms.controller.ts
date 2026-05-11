@@ -1,24 +1,13 @@
 import { Request, Response } from 'express';
 import { supabase } from '../config/supabase';
 
-// Get all CMS content or content for a specific section
-export const getCmsContent = async (req: Request, res: Response): Promise<void> => {
+// Get a list of all wishes (for the admin dashboard)
+export const getAllWishes = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { section_id } = req.query;
-    
-    const query = supabase.from('cms_content').select('*');
-    
-    if (section_id) {
-      const { data, error } = await query.eq('section_id', section_id).single();
-      if (error) {
-        res.status(500).json({ error: error.message });
-        return;
-      }
-      res.status(200).json(data);
-      return;
-    }
-    
-    const { data, error } = await query;
+    const { data, error } = await supabase
+      .from('wishes')
+      .select('id, slug, recipient_name, is_published, created_at')
+      .order('created_at', { ascending: false });
 
     if (error) {
       res.status(500).json({ error: error.message });
@@ -27,25 +16,95 @@ export const getCmsContent = async (req: Request, res: Response): Promise<void> 
 
     res.status(200).json(data);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch CMS content' });
+    res.status(500).json({ error: 'Failed to fetch wishes' });
   }
 };
 
-// Update CMS content for a section
-export const updateCmsContent = async (req: Request, res: Response): Promise<void> => {
+// Create a new wish (blank template)
+export const createWish = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { section_id } = req.params;
-    const { content } = req.body;
-
-    if (!section_id || !content) {
-      res.status(400).json({ error: 'section_id and content are required' });
+    const { slug, recipient_name } = req.body;
+    
+    if (!slug) {
+      res.status(400).json({ error: 'Slug is required' });
       return;
     }
 
-    // Upsert the content (insert if doesn't exist, update if it does)
     const { data, error } = await supabase
-      .from('cms_content')
-      .upsert({ section_id, content, updated_at: new Date().toISOString() }, { onConflict: 'section_id' })
+      .from('wishes')
+      .insert({ slug, recipient_name, content: {} })
+      .select()
+      .single();
+
+    if (error) {
+      res.status(500).json({ error: error.message });
+      return;
+    }
+
+    res.status(201).json(data);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create wish' });
+  }
+};
+
+// Get a single wish by slug (for the user view)
+export const getWishBySlug = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug } = req.params;
+    
+    const { data, error } = await supabase
+      .from('wishes')
+      .select('*')
+      .eq('slug', slug)
+      .single();
+
+    if (error) {
+      res.status(404).json({ error: 'Wish not found' });
+      return;
+    }
+
+    res.status(200).json(data);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch wish' });
+  }
+};
+
+// Get a single wish by ID (for the admin editor)
+export const getWishById = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    
+    const { data, error } = await supabase
+      .from('wishes')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      res.status(404).json({ error: 'Wish not found' });
+      return;
+    }
+
+    res.status(200).json(data);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch wish' });
+  }
+};
+
+// Update wish content
+export const updateWishContent = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { content, is_published } = req.body;
+
+    const { data, error } = await supabase
+      .from('wishes')
+      .update({ 
+        content, 
+        is_published, 
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', id)
       .select()
       .single();
 
@@ -56,21 +115,20 @@ export const updateCmsContent = async (req: Request, res: Response): Promise<voi
 
     res.status(200).json(data);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to update CMS content' });
+    res.status(500).json({ error: 'Failed to update wish' });
   }
 };
 
-// Handle generic media uploads for the CMS
+// Handle media uploads
 export const uploadMedia = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.file) {
       res.status(400).json({ error: 'No file uploaded' });
       return;
     }
-    
-    // multer-storage-cloudinary adds path property containing the URL
     res.status(200).json({ url: req.file.path });
-  } catch (error) {
-    res.status(500).json({ error: 'Upload failed' });
+  } catch (error: any) {
+    console.error('Upload Error:', error);
+    res.status(500).json({ error: error.message || 'Upload failed' });
   }
 };
