@@ -218,7 +218,7 @@ const CombinedLockScreen: React.FC<{
               
               <div className="space-y-4">
                 <h2 className="text-3xl md:text-4xl font-black text-white drop-shadow-lg">
-                  Hold your breath! ✨
+                  Hold your breath! Open exactly at 12:00am(12/05/2026) ✨
                 </h2>
                 <p className="text-blue-100 text-lg font-medium italic opacity-80">
                   Your special surprise is being prepared. The secret code will unlock as soon as the timer hits zero!
