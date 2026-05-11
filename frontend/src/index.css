@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 8%; /* Very dark brownish black #141414 roughly */
+    --foreground: 0 0% 90%; 
+
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 90%;
+
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 90%;
+
+    --primary: 350 75% 25%; /* Deep red/burgundy #70101b */
+    --primary-foreground: 350 30% 90%; /* Pinkish cream */
+
+    --secondary: 350 30% 85%; /* Pinkish cream #e5c3c6 */
+    --secondary-foreground: 350 75% 15%; 
+
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 60%;
+
+    --accent: 350 30% 85%;
+    --accent-foreground: 350 75% 15%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 350 75% 25%;
+
+    --radius: 0rem; /* Brutalist sharp edges */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-[#151111] text-[#e6d0d2] antialiased selection:bg-[#7a1022] selection:text-[#f3d3d3];
+    font-family: 'Courier New', Courier, monospace; /* Base mono font */
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Impact', 'Arial Black', sans-serif; /* Extended bold font placeholder */
+    letter-spacing: 0.05em;
+  }
+}
+
+.tape-strip {
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(4px);
+  position: absolute;
+  z-index: 20;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.paper-texture {
+  background-color: #f3d4d6;
+  background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E");
+  color: #151111;
+}
+
+.bg-noise {
+  position: relative;
+}
+.bg-noise::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.03;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+}
+
+.stamp-border {
+  /* Simple perforated stamp border effect using radial gradient mask */
+  background: white;
+  padding: 12px;
+  position: relative;
+  filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.5));
+}
+.stamp-border::before {
+  content: '';
+  position: absolute;
+  top: -4px; left: -4px; right: -4px; bottom: -4px;
+  background: radial-gradient(circle, transparent 4px, white 5px);
+  background-size: 16px 16px;
+  background-position: -4px -4px;
+  z-index: -1;
+}
