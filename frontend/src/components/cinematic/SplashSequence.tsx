@@ -218,11 +218,11 @@ const CombinedLockScreen: React.FC<{
               
               <div className="space-y-4">
                 <h2 className="text-3xl md:text-4xl font-black text-white drop-shadow-lg">
-                  {new Date(recipient.dob).getTime() > new Date().getTime() ? (
+                  {new Date(targetDate).getTime() > new Date().getTime() ? (
                     <span>
                         Hold your breath! Open exactly at <br />
                         {(() => {
-                        const date = new Date(recipient.dob);
+                        const date = new Date(targetDate);
                         return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })+
                                 ' ('+
                                 date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })+
