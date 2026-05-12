@@ -218,7 +218,22 @@ const CombinedLockScreen: React.FC<{
               
               <div className="space-y-4">
                 <h2 className="text-3xl md:text-4xl font-black text-white drop-shadow-lg">
-                  Hold your breath! Open exactly at 12:00am(12/05/2026) ✨
+                  {new Date(recipient.dob).getTime() > new Date().getTime() ? (
+                    <span>
+                        Hold your breath! Open exactly at <br />
+                        {(() => {
+                        const date = new Date(recipient.dob);
+                        return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })+
+                                ' ('+
+                                date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })+
+                                ')';
+                        })()}
+                        ✨
+                    </span>
+                    ) : (
+                    <span>SURPRISE!!! 🎉</span>
+                    )}
+
                 </h2>
                 <p className="text-blue-100 text-lg font-medium italic opacity-80">
                   Your special surprise is being prepared. The secret code will unlock as soon as the timer hits zero!

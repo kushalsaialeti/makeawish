@@ -1,6 +1,8 @@
 import express, { Express, Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import cron from 'node-cron';
+
 
 dotenv.config();
 
@@ -22,28 +24,27 @@ app.use(cors({
 app.use(express.json());
 
 // Keep-alive cron job (every 6 minutes)
-const KEEPALIVE_INTERVAL = 6 * 60 * 1000; // 6 minutes
+// This pings both the backend and frontend to keep them from spinning down
+cron.schedule('*/6 * * * *', async () => {
+  const backendUrl = process.env.BACKEND_URL || 'https://makeawish-yo9n.onrender.com';
+  const frontendUrl = process.env.FRONTEND_URL || 'https://makeawishh.vercel.app';
 
-setInterval(async () => {
-  const backendUrl = process.env.BACKEND_URL || `http://localhost:${port}`;
-  const frontendUrl = process.env.FRONTEND_URL;
+  console.log(`[Cron] Running keep-alive ping at ${new Date().toISOString()}`);
 
   try {
     const res = await fetch(`${backendUrl}/`);
-    console.log(`[Keepalive] Backend ping status: ${res.status}`);
+    console.log(`[Cron] Backend ping status: ${res.status}`);
   } catch (err) {
-    console.error('[Keepalive] Backend ping failed:', err);
+    console.error('[Cron] Backend ping failed:', err);
   }
 
-  if (frontendUrl) {
-    try {
-      const res = await fetch(frontendUrl);
-      console.log(`[Keepalive] Frontend ping status: ${res.status}`);
-    } catch (err) {
-      console.error('[Keepalive] Frontend ping failed:', err);
-    }
+  try {
+    const res = await fetch(frontendUrl);
+    console.log(`[Cron] Frontend ping status: ${res.status}`);
+  } catch (err) {
+    console.error('[Cron] Frontend ping failed:', err);
   }
-}, KEEPALIVE_INTERVAL);
+});
 // Routes
 app.use('/api/memories', memoryRoutes);
 app.use('/api/cms', cmsRoutes);

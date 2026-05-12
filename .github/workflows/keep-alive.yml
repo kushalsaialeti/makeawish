@@ -1,0 +1,16 @@
+name: Keep Alive
+on:
+  schedule:
+    - cron: '*/6 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Services
+        run: |
+          echo "Pinging Backend..."
+          curl -s https://makeawish-yo9n.onrender.com/
+          echo "Pinging Frontend..."
+          curl -s https://makeawishh.vercel.app/

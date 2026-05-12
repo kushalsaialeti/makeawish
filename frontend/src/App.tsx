@@ -12,6 +12,7 @@ import { useCmsStore } from './store/cmsStore';
 import { Memories } from './pages/Memories';
 import { GiftSequence } from './components/cinematic/GiftSequence';
 import { Navigation } from './components/Navigation';
+import { useKeepAlive } from './hooks/useKeepAlive';
 
 function WishView() {
   const { slug } = useParams<{ slug: string }>();
@@ -123,6 +124,7 @@ function Home({ isSlugView = false }: { isSlugView?: boolean }) {
 }
 
 function App() {
+  useKeepAlive();
   return (
     <BrowserRouter>
         <Routes>
