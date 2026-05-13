@@ -96,7 +96,9 @@ export const GiftSequence: React.FC<GiftSequenceProps> = ({ onComplete, initialS
               animate={{ x: 0, rotate: -15, opacity: 0.4 }}
               className="absolute -top-20 -left-20 w-48 h-56 bg-white p-2 shadow-xl border border-gray-200 hidden md:block"
             >
-              <img src={giftSequence.questionBgImageLeft} alt="bg" className="w-full h-40 object-cover" />
+              {giftSequence.questionBgImageLeft && (
+                <img src={giftSequence.questionBgImageLeft} alt="bg" className="w-full h-40 object-cover" />
+              )}
               <div className="h-10" />
             </motion.div>
 
@@ -105,7 +107,9 @@ export const GiftSequence: React.FC<GiftSequenceProps> = ({ onComplete, initialS
               animate={{ x: 0, rotate: 12, opacity: 0.4 }}
               className="absolute -bottom-20 -right-20 w-48 h-56 bg-white p-2 shadow-xl border border-gray-200 hidden md:block"
             >
-              <img src={giftSequence.questionBgImageRight} alt="bg" className="w-full h-40 object-cover" />
+              {giftSequence.questionBgImageRight && (
+                <img src={giftSequence.questionBgImageRight} alt="bg" className="w-full h-40 object-cover" />
+              )}
               <div className="h-10" />
             </motion.div>
 

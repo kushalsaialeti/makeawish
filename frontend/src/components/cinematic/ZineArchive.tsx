@@ -1,8 +1,9 @@
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { useCmsStore } from '../../store/cmsStore';
 
 export const ZineArchive = () => {
-  const { zineArchive } = useCmsStore();
+  const { zineArchive, currentWishSlug } = useCmsStore();
   
   if (!zineArchive) return null;
 
@@ -14,9 +15,12 @@ export const ZineArchive = () => {
         <h2 className="text-5xl md:text-7xl font-black text-[#e6d0d2] tracking-wider uppercase">
           {zineArchive.sectionHeading}
         </h2>
-        <a href="#memories" className="hidden md:block text-xs font-mono uppercase tracking-widest border-b border-white/30 hover:border-white pb-1">
+        <Link 
+          to={`/wish/${currentWishSlug}/memories`} 
+          className="hidden md:block text-xs font-mono uppercase tracking-widest border-b border-white/30 hover:border-white pb-1 transition-colors"
+        >
           {zineArchive.viewAllText}
-        </a>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-8 relative z-10">

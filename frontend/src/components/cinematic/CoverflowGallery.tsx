@@ -37,15 +37,9 @@ export const CoverflowGallery = () => {
   const [isHovered, setIsHovered] = useState(false);
   const { coverflowGallery } = useCmsStore();
   
-  if (!coverflowGallery) return null;
+  if (!coverflowGallery || !coverflowGallery.images) return null;
 
-  const images = [
-    coverflowGallery.image1,
-    coverflowGallery.image2,
-    coverflowGallery.image3,
-    coverflowGallery.image4,
-    coverflowGallery.image5,
-  ];
+  const images = coverflowGallery.images;
 
   // We need to duplicate the items so the marquee can loop smoothly over 50% of the total width
   const doubledImages = [...images, ...images, ...images, ...images];

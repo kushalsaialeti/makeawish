@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { supabase } from '../lib/supabase';
 
 // --- Interfaces (Same as before but nested in a single object) ---
 export interface ScrapbookHeroContent {
@@ -24,6 +25,11 @@ export interface SplashScreenContent {
   recipientName: string;
   clockText: string;
   splashImage: string;
+  lockHeading?: string;
+  lockSubtext?: string;
+  birthdayHeading?: string;
+  bgImage?: string;
+  ropePolaroids?: string[];
 }
 
 export interface QuestionOption { text: string; isCorrect: boolean; }
@@ -45,15 +51,13 @@ export interface GiftSequenceContent {
   questionBgImageRight: string;
 }
 
+export interface ZineSplitItem { image: string; backText: string; desc: string; }
 export interface ZineSplitShowcaseContent {
-  image1: string; backText1: string; desc1: string;
-  image2: string; backText2: string; desc2: string;
-  image3: string; backText3: string; desc3: string;
-  image4: string; backText4: string; desc4: string;
+  items: ZineSplitItem[];
 }
 
 export interface CoverflowGalleryContent {
-  image1: string; image2: string; image3: string; image4: string; image5: string;
+  images: string[];
 }
 
 export interface ZineArchiveContent {
@@ -112,14 +116,17 @@ export interface CmsState {
   
   isLoading: boolean;
   error: string | null;
-  isSplashCompleted: boolean;
-
+  isUnlocked: boolean;
+  isPublished: boolean;
+ 
   // Actions
   fetchWishBySlug: (slug: string) => Promise<void>;
   fetchWishById: (id: string) => Promise<void>;
   createWish: (slug: string, name: string) => Promise<string>;
   updateSection: (section: keyof WishData['content'], content: any) => Promise<void>;
-  setSplashCompleted: (completed: boolean) => void;
+  setUnlocked: (unlocked: boolean) => void;
+  subscribeToWish: (slug: string) => () => void;
+  refreshWish: () => Promise<void>;
 }
 
 // --- Defaults ---
@@ -128,6 +135,11 @@ const defaultSplashScreen: SplashScreenContent = {
   promptHeading: 'A surprise awaits.', btnNowText: 'Open Now', btnLaterText: 'Later',
   recipientName: 'Beautiful', clockText: 'TIME IS TICKING',
   splashImage: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=1200',
+  lockHeading: 'Enter the passcode',
+  lockSubtext: 'Your special day',
+  birthdayHeading: 'HAPPY BIRTHDAY BEAUTIFUL!',
+  bgImage: '',
+  ropePolaroids: [],
 };
 
 const defaultScrapbookHero: ScrapbookHeroContent = {
@@ -142,18 +154,22 @@ const defaultScrapbookHero: ScrapbookHeroContent = {
 };
 
 const defaultZineSplitShowcase: ZineSplitShowcaseContent = {
-  image1: 'https://images.unsplash.com/photo-1514315384763-ba401779410f?w=800', backText1: 'I CAN ALWAYS MAKE YOU SMILE', desc1: 'A moment of laughter.',
-  image2: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963?w=800', backText2: 'HAPPY BIRTHDAY', desc2: 'Celebrating you.',
-  image3: 'https://images.unsplash.com/photo-1520113412048-285b0d0dc522?w=800', backText3: 'LOVE TO TEASE YOU!', desc3: 'My favorite hobby.',
-  image4: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800', backText4: 'FOREVER MOMENTS', desc4: 'Every second is a treasure.',
+  items: [
+    { image: 'https://images.unsplash.com/photo-1514315384763-ba401779410f?w=800', backText: 'I CAN ALWAYS MAKE YOU SMILE', desc: 'A moment of laughter.' },
+    { image: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963?w=800', backText: 'HAPPY BIRTHDAY', desc: 'Celebrating you.' },
+    { image: 'https://images.unsplash.com/photo-1520113412048-285b0d0dc522?w=800', backText: 'LOVE TO TEASE YOU!', desc: 'My favorite hobby.' },
+    { image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800', backText: 'FOREVER MOMENTS', desc: 'Every second is a treasure.' },
+  ]
 };
 
 const defaultCoverflowGallery: CoverflowGalleryContent = {
-  image1: 'https://images.unsplash.com/photo-1530103862676-fa390d6259c7',
-  image2: 'https://images.unsplash.com/photo-1464349095431-e9a21285b5f3',
-  image3: 'https://images.unsplash.com/photo-1513151233558-d860c5398176',
-  image4: 'https://images.unsplash.com/photo-1533294160622-d5fece3e080d',
-  image5: 'https://images.unsplash.com/photo-1516627145497-ae6968895b74',
+  images: [
+    'https://images.unsplash.com/photo-1530103862676-fa390d6259c7',
+    'https://images.unsplash.com/photo-1464349095431-e9a21285b5f3',
+    'https://images.unsplash.com/photo-1513151233558-d860c5398176',
+    'https://images.unsplash.com/photo-1533294160622-d5fece3e080d',
+    'https://images.unsplash.com/photo-1516627145497-ae6968895b74'
+  ]
 };
 
 const defaultZineArchive: ZineArchiveContent = {
@@ -190,7 +206,8 @@ export const useCmsStore = create<CmsState>((set, get) => ({
   memories: null,
   isLoading: false,
   error: null,
-  isSplashCompleted: false,
+  isUnlocked: sessionStorage.getItem('wish_unlocked') === 'true',
+  isPublished: false,
 
   fetchWishBySlug: async (slug: string) => {
     set({ isLoading: true, error: null });
@@ -199,16 +216,18 @@ export const useCmsStore = create<CmsState>((set, get) => ({
       if (!response.ok) throw new Error('Wish not found');
       const data: WishData = await response.json();
       
+      const content = data.content || {};
       set({
         currentWishId: data.id,
         currentWishSlug: data.slug,
-        scrapbookHero: { ...defaultScrapbookHero, ...data.content.scrapbookHero },
-        splashScreen: { ...defaultSplashScreen, ...data.content.splashScreen },
-        zineSplitShowcase: { ...defaultZineSplitShowcase, ...data.content.zineSplitShowcase },
-        coverflowGallery: { ...defaultCoverflowGallery, ...data.content.coverflowGallery },
-        zineArchive: { ...defaultZineArchive, ...data.content.zineArchive },
-        giftSequence: { ...defaultGiftSequence, ...data.content.giftSequence },
-        memories: { ...defaultMemories, ...data.content.memories },
+        scrapbookHero: { ...defaultScrapbookHero, ...content.scrapbookHero },
+        splashScreen: { ...defaultSplashScreen, ...content.splashScreen },
+        zineSplitShowcase: { ...defaultZineSplitShowcase, ...content.zineSplitShowcase },
+        coverflowGallery: { ...defaultCoverflowGallery, ...content.coverflowGallery },
+        zineArchive: { ...defaultZineArchive, ...content.zineArchive },
+        giftSequence: { ...defaultGiftSequence, ...content.giftSequence },
+        memories: { ...defaultMemories, ...content.memories },
+        isPublished: data.is_published,
         isLoading: false
       });
     } catch (error: any) {
@@ -219,20 +238,30 @@ export const useCmsStore = create<CmsState>((set, get) => ({
   fetchWishById: async (id: string) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await fetch(`${API_URL}/api/cms/id/${id}`);
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch(`${API_URL}/api/cms/id/${id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.status === 401) {
+        localStorage.removeItem('admin_token');
+        window.location.reload();
+        return;
+      }
       if (!response.ok) throw new Error('Wish not found');
       const data: WishData = await response.json();
       
+      const content = data.content || {};
       set({
         currentWishId: data.id,
         currentWishSlug: data.slug,
-        scrapbookHero: { ...defaultScrapbookHero, ...data.content.scrapbookHero },
-        splashScreen: { ...defaultSplashScreen, ...data.content.splashScreen },
-        zineSplitShowcase: { ...defaultZineSplitShowcase, ...data.content.zineSplitShowcase },
-        coverflowGallery: { ...defaultCoverflowGallery, ...data.content.coverflowGallery },
-        zineArchive: { ...defaultZineArchive, ...data.content.zineArchive },
-        giftSequence: { ...defaultGiftSequence, ...data.content.giftSequence },
-        memories: { ...defaultMemories, ...data.content.memories },
+        scrapbookHero: { ...defaultScrapbookHero, ...content.scrapbookHero },
+        splashScreen: { ...defaultSplashScreen, ...content.splashScreen },
+        zineSplitShowcase: { ...defaultZineSplitShowcase, ...content.zineSplitShowcase },
+        coverflowGallery: { ...defaultCoverflowGallery, ...content.coverflowGallery },
+        zineArchive: { ...defaultZineArchive, ...content.zineArchive },
+        giftSequence: { ...defaultGiftSequence, ...content.giftSequence },
+        memories: { ...defaultMemories, ...content.memories },
+        isPublished: data.is_published,
         isLoading: false
       });
     } catch (error: any) {
@@ -242,11 +271,20 @@ export const useCmsStore = create<CmsState>((set, get) => ({
 
   createWish: async (slug, name) => {
     set({ isLoading: true });
+    const token = localStorage.getItem('admin_token');
     const response = await fetch(`${API_URL}/api/cms`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify({ slug, recipient_name: name })
     });
+    if (response.status === 401) {
+      localStorage.removeItem('admin_token');
+      window.location.reload();
+      return '';
+    }
     const data = await response.json();
     set({ isLoading: false });
     return data.id;
@@ -256,26 +294,120 @@ export const useCmsStore = create<CmsState>((set, get) => ({
     const id = get().currentWishId;
     if (!id) return;
 
-    // Local update
-    set({ [section]: content } as any);
+    const payload: any = {};
+    
+    // Check if we are updating a top-level property or a content section
+    if (section === 'is_published' as any) {
+      set({ isPublished: content });
+      payload.is_published = content;
+    } else {
+      // Local update for the specific section
+      set({ [section]: content } as any);
+      
+      // Reconstruct the full content object from current store state
+      const updatedContent = {
+        scrapbookHero: section === 'scrapbookHero' ? content : get().scrapbookHero,
+        splashScreen: section === 'splashScreen' ? content : get().splashScreen,
+        zineSplitShowcase: section === 'zineSplitShowcase' ? content : get().zineSplitShowcase,
+        coverflowGallery: section === 'coverflowGallery' ? content : get().coverflowGallery,
+        zineArchive: section === 'zineArchive' ? content : get().zineArchive,
+        giftSequence: section === 'giftSequence' ? content : get().giftSequence,
+        memories: section === 'memories' ? content : get().memories,
+      };
+      
+      payload.content = updatedContent;
+    }
 
-    // Persist to DB
-    const currentContent = {
-      scrapbookHero: get().scrapbookHero,
-      splashScreen: get().splashScreen,
-      zineSplitShowcase: get().zineSplitShowcase,
-      coverflowGallery: get().coverflowGallery,
-      zineArchive: get().zineArchive,
-      giftSequence: get().giftSequence,
-      memories: get().memories,
-    };
-
-    await fetch(`${API_URL}/api/cms/${id}`, {
+    const token = localStorage.getItem('admin_token');
+    const response = await fetch(`${API_URL}/api/cms/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: { ...currentContent, [section]: content } })
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
     });
+
+    if (response.status === 401) {
+      localStorage.removeItem('admin_token');
+      window.location.reload();
+    }
   },
 
-  setSplashCompleted: (completed) => set({ isSplashCompleted: completed }),
+  setUnlocked: (unlocked) => {
+    sessionStorage.setItem('wish_unlocked', unlocked ? 'true' : 'false');
+    set({ isUnlocked: unlocked });
+  },
+
+  refreshWish: async () => {
+    const slug = get().currentWishSlug;
+    if (!slug) return;
+    
+    try {
+      const response = await fetch(`${API_URL}/api/cms/slug/${slug}`);
+      if (!response.ok) return;
+      const data: WishData = await response.json();
+      const content = data.content || {};
+      
+      set({
+        isPublished: data.is_published,
+        scrapbookHero: { ...defaultScrapbookHero, ...(content.scrapbookHero || {}) },
+        splashScreen: { ...defaultSplashScreen, ...(content.splashScreen || {}) },
+        zineSplitShowcase: { ...defaultZineSplitShowcase, ...(content.zineSplitShowcase || {}) },
+        coverflowGallery: { ...defaultCoverflowGallery, ...(content.coverflowGallery || {}) },
+        zineArchive: { ...defaultZineArchive, ...(content.zineArchive || {}) },
+        giftSequence: { ...defaultGiftSequence, ...(content.giftSequence || {}) },
+        memories: { ...defaultMemories, ...(content.memories || {}) },
+      });
+    } catch (err) {
+      console.error('[Realtime] Fallback refresh failed:', err);
+    }
+  },
+
+  subscribeToWish: (slug: string) => {
+    console.log(`[Realtime] Initializing subscription for: ${slug}`);
+    
+    const channel = supabase
+      .channel(`wish-realtime-${slug}`)
+      .on(
+        'postgres_changes',
+        { 
+          event: 'UPDATE', 
+          schema: 'public', 
+          table: 'wishes', 
+          filter: `slug=eq.${slug}` 
+        },
+        async (payload) => {
+          console.log('[Realtime] Change detected:', payload);
+          
+          // Strategy: If payload is full, use it. Otherwise, trigger a fresh fetch.
+          const data = payload.new as WishData;
+          if (data && data.content && Object.keys(data.content).length > 0) {
+            console.log('[Realtime] Using payload data');
+            const content = data.content;
+            set({
+              isPublished: data.is_published,
+              scrapbookHero: { ...defaultScrapbookHero, ...(content.scrapbookHero || {}) },
+              splashScreen: { ...defaultSplashScreen, ...(content.splashScreen || {}) },
+              zineSplitShowcase: { ...defaultZineSplitShowcase, ...(content.zineSplitShowcase || {}) },
+              coverflowGallery: { ...defaultCoverflowGallery, ...(content.coverflowGallery || {}) },
+              zineArchive: { ...defaultZineArchive, ...(content.zineArchive || {}) },
+              giftSequence: { ...defaultGiftSequence, ...(content.giftSequence || {}) },
+              memories: { ...defaultMemories, ...(content.memories || {}) },
+            });
+          } else {
+            console.log('[Realtime] Payload incomplete, fetching fresh data...');
+            await get().refreshWish();
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log(`[Realtime] Subscription status for ${slug}:`, status);
+      });
+    
+    return () => {
+      console.log(`[Realtime] Cleaning up subscription for ${slug}`);
+      supabase.removeChannel(channel);
+    };
+  }
 }));

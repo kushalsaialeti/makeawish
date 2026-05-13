@@ -1,6 +1,6 @@
-import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useCmsStore } from '../store/cmsStore';
 
 export const Navigation: React.FC = () => {
   const navigate = useNavigate();
@@ -8,11 +8,12 @@ export const Navigation: React.FC = () => {
 
   // Only visible on the landing page (Home route)
   // We hide it if we are on any other route like /admin or /memories
-  const isHomePage = location.pathname === '/' || location.pathname.startsWith('/wish/');
+  const { currentWishSlug } = useCmsStore();
+  const isHomePage = location.pathname === `/${currentWishSlug}` || location.pathname === `/${currentWishSlug}/experience`;
 
   return (
     <AnimatePresence>
-      {isHomePage && (
+      {isHomePage && currentWishSlug && (
         <motion.div 
           initial={{ opacity: 0, scale: 0.8, x: 20 }}
           animate={{ opacity: 1, scale: 1, x: 0 }}
@@ -22,7 +23,7 @@ export const Navigation: React.FC = () => {
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
-            onClick={() => navigate('/memories')}
+            onClick={() => navigate(`/${currentWishSlug}/memories`)}
             className="relative group flex flex-col items-center"
           >
             {/* The Vintage Zenit-E Camera Body - Scaled Down */}

@@ -1,13 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useCmsStore } from '../store/cmsStore';
 
 export const Memories: React.FC = () => {
-  const { memories, currentWishSlug } = useCmsStore();
+  const { slug } = useParams<{ slug: string }>();
+  const { memories, currentWishSlug, fetchWishBySlug, subscribeToWish, isLoading } = useCmsStore();
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [flippedIndex, setFlippedIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (slug && slug !== currentWishSlug) {
+      fetchWishBySlug(slug);
+    }
+    if (slug) {
+      const unsubscribe = subscribeToWish(slug);
+      return () => unsubscribe();
+    }
+  }, [slug, currentWishSlug, fetchWishBySlug, subscribeToWish]);
 
   useEffect(() => {
     if (memories?.tvType === 'slideshow' && memories.tvSlideshowImages && memories.tvSlideshowImages.length > 0) {
@@ -18,14 +29,21 @@ export const Memories: React.FC = () => {
     }
   }, [memories]);
 
+  if (isLoading) return (
+    <div className="min-h-screen bg-[#1c1917] flex items-center justify-center">
+      <div className="text-white font-serif italic text-2xl animate-pulse">Loading Memories...</div>
+    </div>
+  );
+
   if (!memories || !memories.polaroids) return null;
 
-  // We only show the first 7 polaroids as requested
-  const displayPolaroids = memories.polaroids.slice(0, 7);
+  const displayPolaroids = memories.polaroids;
 
   const handleBack = () => {
-    if (currentWishSlug) {
-      navigate(`/wish/${currentWishSlug}`);
+    if (slug) {
+      navigate(`/${slug}`);
+    } else if (currentWishSlug) {
+      navigate(`/${currentWishSlug}`);
     } else {
       navigate('/');
     }
@@ -82,15 +100,19 @@ export const Memories: React.FC = () => {
               />
             ) : (
               <AnimatePresence mode="wait">
-                <motion.img
-                  key={currentSlide}
-                  src={memories.tvSlideshowImages[currentSlide]}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 1 }}
-                  className="w-full h-full object-cover grayscale-[0.2]"
-                />
+                  {memories.tvSlideshowImages[currentSlide] ? (
+                    <motion.img
+                      key={currentSlide}
+                      src={memories.tvSlideshowImages[currentSlide]}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 1 }}
+                      className="w-full h-full object-cover grayscale-[0.2]"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-white/10 font-mono text-[10px] uppercase tracking-widest">No Slideshow Content</div>
+                  )}
               </AnimatePresence>
             )}
           </div>
@@ -105,15 +127,15 @@ export const Memories: React.FC = () => {
         <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-4/5 h-6 bg-black/40 blur-2xl rounded-full" />
       </div>
 
-      {/* 7 Fixed Polaroids Grid - No Overlap */}
-      <div className="relative z-10 w-full max-w-6xl grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 pb-20">
+      {/* Dynamic Polaroids Grid - Responsive and Collision-free */}
+      <div className="relative z-10 w-full max-w-7xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 md:gap-12 pb-20">
         {displayPolaroids.map((item, i) => (
           <motion.div
             key={i}
             initial={{ opacity: 0, scale: 0.9, rotate: i % 2 === 0 ? -3 : 3 }}
             animate={{ opacity: 1, scale: 1, rotate: i % 2 === 0 ? -2 : 2 }}
-            transition={{ delay: i * 0.1 }}
-            className={`relative aspect-[4/5] perspective-1000 ${i === 6 ? 'md:col-start-2 md:col-span-1 sm:col-span-2 mx-auto w-full max-w-[280px]' : ''}`}
+            transition={{ delay: (i % 8) * 0.1 }}
+            className="relative aspect-[4/5] perspective-1000"
           >
             <motion.div
               animate={{ rotateY: flippedIndex === i ? 180 : 0 }}
@@ -129,7 +151,11 @@ export const Memories: React.FC = () => {
               >
                 <div className="w-full h-full bg-gray-50 overflow-hidden rounded-sm relative">
                   <div className="absolute inset-0 bg-gradient-to-tr from-amber-900/10 via-transparent to-white/10 pointer-events-none" />
-                  <img src={item.url} alt="Memory" className="w-full h-full object-cover sepia-[0.15] contrast-110" />
+                  {item.url ? (
+                    <img src={item.url} alt="Memory" className="w-full h-full object-cover sepia-[0.15] contrast-110" />
+                  ) : (
+                    <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-300 font-serif italic text-[10px]">No Image</div>
+                  )}
                 </div>
                 {/* Decorative Scotch Tape Effect */}
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-12 h-6 bg-white/20 backdrop-blur-sm border border-white/10 -rotate-3 z-10" />

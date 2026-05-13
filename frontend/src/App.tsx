@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { BrowserRouter, Routes, Route, useParams } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useParams, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { SmoothScroll } from './components/motion/SmoothScroll';
 import { ScrapbookHero } from './components/cinematic/ScrapbookHero';
 import { ZineArchive } from './components/cinematic/ZineArchive';
@@ -14,15 +14,19 @@ import { GiftSequence } from './components/cinematic/GiftSequence';
 import { Navigation } from './components/Navigation';
 import { useKeepAlive } from './hooks/useKeepAlive';
 
-function WishView() {
+function WishView({ phase = 'unlock' }: { phase?: 'unlock' | 'prepare' | 'gift' | 'experience' }) {
   const { slug } = useParams<{ slug: string }>();
-  const { fetchWishBySlug, scrapbookHero, isLoading, error } = useCmsStore();
+  const { fetchWishBySlug, subscribeToWish, scrapbookHero, isLoading, error, isUnlocked } = useCmsStore();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     if (slug && slug !== 'undefined') {
       fetchWishBySlug(slug);
+      const unsubscribe = subscribeToWish(slug);
+      return () => unsubscribe();
     }
-  }, [slug, fetchWishBySlug]);
+  }, [slug, fetchWishBySlug, subscribeToWish]);
 
   if (isLoading) return (
     <div className="min-h-screen bg-[#1c1917] flex items-center justify-center">
@@ -36,35 +40,33 @@ function WishView() {
     </div>
   );
 
-  return <Home isSlugView />;
+  // If they are on /:slug with no phase, redirect to correct starting point
+  if (location.pathname === `/${slug}`) {
+    if (isUnlocked) {
+      return <Navigate to={`/${slug}/experience`} replace />;
+    } else {
+      return <Navigate to={`/${slug}/unlock`} replace />;
+    }
+  }
+
+  if (phase === 'unlock') {
+    return <SplashSequence onComplete={() => navigate(`/${slug}/prepare`)} />;
+  }
+
+  if (phase === 'prepare') {
+    return <SplashSequence onComplete={() => navigate(`/${slug}/gift`)} skipToPrompt />;
+  }
+
+  if (phase === 'gift') {
+    return <GiftSequence onComplete={() => navigate(`/${slug}/experience`)} />;
+  }
+
+  return <Home slug={slug} />;
 }
 
-function Home({ isSlugView = false }: { isSlugView?: boolean }) {
-  const { isSplashCompleted, setSplashCompleted, fetchWishBySlug, currentWishSlug } = useCmsStore();
-  const [showGift, setShowGift] = useState(false);
-  const [hasSeenGift, setHasSeenGift] = useState(false);
-  const [giftInitialStep, setGiftInitialStep] = useState<'questions' | 'gift' | 'letter'>('questions');
-
-  useEffect(() => {
-    // If we are on the root path and no slug is loaded, we can load a default one or just show empty
-    if (!isSlugView && !currentWishSlug) {
-       fetchWishBySlug('default'); 
-    }
-  }, [isSlugView, currentWishSlug, fetchWishBySlug]);
-
-  if (!isSplashCompleted) {
-    return <SplashSequence onComplete={() => { setSplashCompleted(true); setShowGift(true); }} />;
-  }
-
-  if (showGift && !hasSeenGift) {
-    return <GiftSequence initialStep={giftInitialStep} onComplete={() => { setShowGift(false); setHasSeenGift(true); }} />;
-  }
-
-  // Also handle the case where showGift is manually triggered from the recap section
-  if (showGift && hasSeenGift) {
-    return <GiftSequence initialStep={giftInitialStep} onComplete={() => setShowGift(false)} />;
-  }
-
+function Home({ slug }: { slug: string }) {
+  const navigate = useNavigate();
+  
   return (
     <SmoothScroll>
       <Navigation />
@@ -81,7 +83,7 @@ function Home({ isSlugView = false }: { isSlugView?: boolean }) {
             <div className="flex flex-wrap justify-center gap-8">
               <motion.button
                 whileHover={{ scale: 1.05, rotate: -2 }}
-                onClick={() => { setGiftInitialStep('gift'); setShowGift(true); }}
+                onClick={() => navigate(`/${slug}/gift`)}
                 className="group relative w-64 aspect-[4/5] bg-white p-4 pb-12 shadow-2xl rotate-[-2deg] transition-transform"
               >
                 <div className="w-full h-full bg-gray-200 overflow-hidden relative">
@@ -95,7 +97,7 @@ function Home({ isSlugView = false }: { isSlugView?: boolean }) {
 
               <motion.button
                 whileHover={{ scale: 1.05, rotate: 2 }}
-                onClick={() => { setGiftInitialStep('letter'); setShowGift(true); }}
+                onClick={() => navigate(`/${slug}/gift`)}
                 className="group relative w-64 aspect-[4/5] bg-[#fdfaf3] p-4 pb-12 shadow-2xl rotate-[2deg] transition-transform"
               >
                 <div className="w-full h-full border border-amber-100 flex items-center justify-center p-4">
@@ -128,10 +130,18 @@ function App() {
   return (
     <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/wish/:slug" element={<WishView />} />
-          <Route path="/memories" element={<SmoothScroll><Memories /></SmoothScroll>} />
           <Route path="/admin/*" element={<AdminDashboard />} />
+          
+          {/* User Wish Experience Phases - Ordered by flow */}
+          <Route path="/:slug/unlock" element={<WishView phase="unlock" />} />
+          <Route path="/:slug/prepare" element={<WishView phase="prepare" />} />
+          <Route path="/:slug/gift" element={<WishView phase="gift" />} />
+          <Route path="/:slug/experience" element={<WishView phase="experience" />} />
+          <Route path="/:slug/memories" element={<SmoothScroll><Memories /></SmoothScroll>} />
+          <Route path="/:slug" element={<WishView />} />
+          {/* Compatibility routes */}
+          <Route path="/wish/:slug" element={<Navigate to="/:slug" replace />} />
+          <Route path="/wish/:slug/memories" element={<Navigate to="/:slug/memories" replace />} />
         </Routes>
     </BrowserRouter>
   );

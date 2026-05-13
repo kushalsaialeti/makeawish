@@ -16,6 +16,7 @@ export const getAllWishes = async (req: Request, res: Response): Promise<void> =
 
     res.status(200).json(data);
   } catch (error) {
+    console.error('Fetch Wishes Error:', error);
     res.status(500).json({ error: 'Failed to fetch wishes' });
   }
 };
@@ -43,6 +44,7 @@ export const createWish = async (req: Request, res: Response): Promise<void> => 
 
     res.status(201).json(data);
   } catch (error) {
+    console.error('Create Wish Error:', error);
     res.status(500).json({ error: 'Failed to create wish' });
   }
 };
@@ -65,6 +67,7 @@ export const getWishBySlug = async (req: Request, res: Response): Promise<void> 
 
     res.status(200).json(data);
   } catch (error) {
+    console.error('Fetch Wish by Slug Error:', error);
     res.status(500).json({ error: 'Failed to fetch wish' });
   }
 };
@@ -87,6 +90,7 @@ export const getWishById = async (req: Request, res: Response): Promise<void> =>
 
     res.status(200).json(data);
   } catch (error) {
+    console.error('Fetch Wish by ID Error:', error);
     res.status(500).json({ error: 'Failed to fetch wish' });
   }
 };
@@ -97,24 +101,35 @@ export const updateWishContent = async (req: Request, res: Response): Promise<vo
     const { id } = req.params;
     const { content, is_published } = req.body;
 
+    console.log(`[CMS] Updating wish ${id}. is_published: ${is_published}`);
+
+    const updateData: any = { 
+      updated_at: new Date().toISOString() 
+    };
+    
+    if (content !== undefined) updateData.content = content;
+    if (is_published !== undefined) updateData.is_published = is_published;
+
     const { data, error } = await supabase
       .from('wishes')
-      .update({ 
-        content, 
-        is_published, 
-        updated_at: new Date().toISOString() 
-      })
+      .update(updateData)
       .eq('id', id)
-      .select()
-      .single();
+      .select();
 
     if (error) {
+      console.error('[CMS] Supabase Update Error:', error);
       res.status(500).json({ error: error.message });
       return;
     }
 
-    res.status(200).json(data);
+    if (!data || data.length === 0) {
+      res.status(404).json({ error: 'Wish not found or no changes made' });
+      return;
+    }
+
+    res.status(200).json(data[0]);
   } catch (error) {
+    console.error('[CMS] Unexpected Update Error:', error);
     res.status(500).json({ error: 'Failed to update wish' });
   }
 };
@@ -128,7 +143,7 @@ export const uploadMedia = async (req: Request, res: Response): Promise<void> =>
     }
     res.status(200).json({ url: req.file.path });
   } catch (error: any) {
-    console.error('Upload Error:', error);
+    console.error('[CMS] Media Upload Error:', error);
     res.status(500).json({ error: error.message || 'Upload failed' });
   }
 };

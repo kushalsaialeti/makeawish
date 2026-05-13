@@ -5,11 +5,13 @@ import confetti from 'canvas-confetti';
 
 interface SplashSequenceProps {
   onComplete: () => void;
+  skipToPrompt?: boolean;
 }
 
-export const SplashSequence: React.FC<SplashSequenceProps> = ({ onComplete }) => {
-  const { splashScreen } = useCmsStore();
-  const [step, setStep] = useState<'locked' | 'prompt'>('locked');
+export const SplashSequence: React.FC<SplashSequenceProps> = ({ onComplete, skipToPrompt = false }) => {
+  const { splashScreen, setUnlocked } = useCmsStore();
+  const [step, setStep] = useState<'locked' | 'prompt'>(skipToPrompt ? 'prompt' : 'locked');
+  const [phase, setPhase] = useState<'countdown' | 'explosion'>('countdown');
 
   useEffect(() => {
     // Content is now fetched by the parent component (WishView or AdminDashboard)
@@ -19,18 +21,29 @@ export const SplashSequence: React.FC<SplashSequenceProps> = ({ onComplete }) =>
 
   return (
     <div className="fixed inset-0 z-[100] text-white font-sans flex flex-col items-center justify-center overflow-hidden">
-      {/* Global Birthday Backdrop */}
+      {/* Global Birthday Backdrop - Always visible */}
       <div 
         className="absolute inset-0 z-[-1] scale-110"
         style={{ 
-          backgroundImage: 'url("https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=2000&auto=format&fit=crop")',
+          backgroundImage: `url("${splashScreen.bgImage || 'https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=2000&auto=format&fit=crop'}")`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          filter: 'blur(8px) brightness(0.6)'
+          filter: 'blur(4px) brightness(0.5)'
         }} 
       />
+
+      {/* Subtle Pink Tint Overlay for PIN page (optional, but keep it very transparent if used) */}
+      <motion.div 
+        className="absolute inset-0 z-[-2] bg-pink-500/10"
+        initial={false}
+        animate={{ opacity: phase === 'explosion' ? 1 : 0 }}
+      />
+
+      {/* Rope Polaroids Background */}
+      <RopePolaroids images={splashScreen.ropePolaroids || []} />
+
       {/* Gradient Overlay for better text readability */}
-      <div className="absolute inset-0 z-[-1] bg-gradient-to-b from-black/20 via-transparent to-black/40" />
+      <div className="absolute inset-0 z-[-1] bg-gradient-to-b from-black/40 via-transparent to-black/60" />
       <AnimatePresence mode="wait">
         {step === 'locked' && (
           <CombinedLockScreen 
@@ -40,7 +53,13 @@ export const SplashSequence: React.FC<SplashSequenceProps> = ({ onComplete }) =>
             recipientName={splashScreen.recipientName || 'Beautiful'}
             clockText={splashScreen.clockText || 'TIME IS TICKING'}
             splashImage={splashScreen.splashImage}
-            onUnlock={() => setStep('prompt')} 
+            lockHeading={splashScreen.lockHeading}
+            lockSubtext={splashScreen.lockSubtext}
+            birthdayHeading={splashScreen.birthdayHeading}
+            currentPhase={phase}
+            onPhaseChange={setPhase}
+            onUnlock={() => { setUnlocked(true); setStep('prompt'); }} 
+            onSkip={() => { setUnlocked(true); setStep('prompt'); }}
           />
         )}
         {step === 'prompt' && (
@@ -57,6 +76,37 @@ export const SplashSequence: React.FC<SplashSequenceProps> = ({ onComplete }) =>
   );
 };
 
+// --- Rope Polaroids Component ---
+const RopePolaroids: React.FC<{ images: string[] }> = ({ images }) => {
+  if (images.length === 0) return null;
+  
+  return (
+    <div className="absolute inset-0 z-[-1] pointer-events-none opacity-20">
+      <div className="absolute top-[12%] left-0 w-full h-[2px] bg-white/20 shadow-[0_0_15px_rgba(255,255,255,0.4)]" />
+      <div className="absolute top-[12%] left-0 w-full flex justify-around px-10">
+        {images.map((img, i) => (
+          <motion.div 
+            key={i}
+            initial={{ y: -20, rotate: i % 2 === 0 ? -10 : 10 }}
+            animate={{ 
+              rotate: [i % 2 === 0 ? -12 : 8, i % 2 === 0 ? -8 : 12, i % 2 === 0 ? -12 : 8],
+              y: [0, 5, 0]
+            }}
+            transition={{ duration: 4 + Math.random() * 2, repeat: Infinity, ease: "easeInOut" }}
+            className="relative"
+          >
+            {/* Clothespin */}
+            <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-2.5 h-5 bg-amber-100/40 rounded-sm z-10" />
+            <div className="w-24 h-28 md:w-32 md:h-40 bg-white/90 p-1.5 pb-6 md:p-2 md:pb-10 shadow-2xl rotate-1">
+              <img src={img} className="w-full h-full object-cover grayscale-[0.8]" alt="bg-mem" />
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 // --- STEP 1: NEW POLAROID & DIAL PAD LAYOUT ---
 const CombinedLockScreen: React.FC<{ 
   targetDate: string, 
@@ -64,10 +114,17 @@ const CombinedLockScreen: React.FC<{
   recipientName: string,
   clockText: string,
   splashImage: string,
-  onUnlock: () => void 
-}> = ({ targetDate, correctPin, recipientName, splashImage, onUnlock }) => {
+  lockHeading?: string,
+  lockSubtext?: string,
+  birthdayHeading?: string,
+  currentPhase: 'countdown' | 'explosion',
+  onPhaseChange: (phase: 'countdown' | 'explosion') => void,
+  onUnlock: () => void,
+  onSkip: () => void
+}> = ({ targetDate, correctPin, recipientName, splashImage, lockHeading, lockSubtext, birthdayHeading, currentPhase, onPhaseChange, onUnlock, onSkip }) => {
   const [time, setTime] = useState({ days: 0, hours: 0, mins: 0, secs: 0 });
-  const [phase, setPhase] = useState<'countdown' | 'explosion'>('countdown');
+  const phase = currentPhase;
+  const setPhase = onPhaseChange;
   const [pin, setPin] = useState<string>('');
   const [error, setError] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
@@ -141,7 +198,7 @@ const CombinedLockScreen: React.FC<{
   return (
     <motion.div 
       initial={{ opacity: 0 }} 
-      animate={{ opacity: 1, backgroundColor: phase === 'explosion' ? '#ff85a1' : '#3a86ff' }} 
+      animate={{ opacity: 1 }} 
       exit={{ opacity: 0, scale: 1.1 }}
       className="flex flex-col items-center justify-start w-full min-h-screen p-4 py-12 md:py-20 relative overflow-y-auto scrollbar-hide"
     >
@@ -153,7 +210,7 @@ const CombinedLockScreen: React.FC<{
               initial={{ scale: 0.5 }} animate={{ scale: 1.2 }}
               className="text-3xl md:text-6xl font-black text-white text-center drop-shadow-lg px-4"
             >
-              HAPPY BIRTHDAY {recipientName.toUpperCase()}!
+              {(birthdayHeading || `HAPPY BIRTHDAY ${recipientName}!`).toUpperCase()}
             </motion.h1>
           ) : (
             <div className="flex space-x-2 md:space-x-4 bg-white/10 backdrop-blur-md px-6 py-4 rounded-3xl border border-white/20 shadow-2xl">
@@ -254,7 +311,16 @@ const CombinedLockScreen: React.FC<{
               animate={{ opacity: 1, scale: 1 }}
               className="flex flex-col items-center"
             >
-              <h2 className="text-2xl md:text-3xl font-bold mb-6 tracking-wide drop-shadow-md">Enter the passcode</h2>
+              <div className="flex flex-col items-end mb-6 w-full">
+                <h2 className="text-2xl md:text-3xl font-bold tracking-wide drop-shadow-md text-white whitespace-nowrap">
+                  {lockHeading || 'Enter the passcode'}
+                </h2>
+                {lockSubtext && (
+                  <p className="text-[10px] md:text-xs font-medium opacity-60 text-white italic -mt-1 tracking-widest uppercase">
+                    {lockSubtext}
+                  </p>
+                )}
+              </div>
               
               {/* PIN Boxes (8 numbers) */} 
               <div className="flex gap-2 mb-8">

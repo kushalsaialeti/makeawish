@@ -58,63 +58,46 @@ const FlipCard = ({ image, backText, desc, rotateClass }: { image: string, backT
 export const ZineSplitShowcase = () => {
   const { zineSplitShowcase } = useCmsStore();
 
-  if (!zineSplitShowcase) return null;
+  if (!zineSplitShowcase || !zineSplitShowcase.items) return null;
 
   return (
     <section className="bg-[#151111] text-[#e6d0d2] py-24 md:py-32 overflow-hidden border-b border-white/10">
       <motion.div 
-        className="max-w-[1600px] mx-auto px-4 md:px-8 grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-8 items-center"
+        className="max-w-[1600px] mx-auto px-4 md:px-8"
         variants={staggerContainer}
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, margin: "-100px" }}
       >
-        <motion.div className="md:col-span-4 flex items-center justify-center" variants={fadeUp}>
-          <div className="w-3/4 md:w-full">
-            <FlipCard 
-              image={zineSplitShowcase.image1} 
-              backText={zineSplitShowcase.backText1} 
-              desc={zineSplitShowcase.desc1}
-              rotateClass="-rotate-2 hover:rotate-0"
-            />
-          </div>
-        </motion.div>
-
-        <motion.div className="md:col-span-4 flex flex-col items-center justify-center space-y-12 relative z-10" variants={cinematicReveal}>
-          <h2 className="text-6xl md:text-8xl font-black italic tracking-tighter text-center leading-none text-[#f3d4d6]">
-            LIVING
-            <br />
-            ART
+        <motion.div className="mb-20 text-center" variants={cinematicReveal}>
+           <h2 className="text-6xl md:text-9xl font-black italic tracking-tighter leading-none text-[#f3d4d6] drop-shadow-[0_10px_30px_rgba(243,212,214,0.2)]">
+            LIVING ART
           </h2>
-          <div className="w-px h-16 bg-white/20 hidden md:block" />
-          <div className="w-3/4">
-            <FlipCard 
-              image={zineSplitShowcase.image2} 
-              backText={zineSplitShowcase.backText2} 
-              desc={zineSplitShowcase.desc2}
-              rotateClass="rotate-3 hover:-rotate-1"
-            />
-          </div>
         </motion.div>
 
-        <motion.div className="md:col-span-4 flex flex-col justify-center space-y-16 mt-16 md:mt-32 items-center" variants={fadeUp}>
-          <div className="w-3/4">
-            <FlipCard 
-              image={zineSplitShowcase.image3} 
-              backText={zineSplitShowcase.backText3} 
-              desc={zineSplitShowcase.desc3}
-              rotateClass="rotate-1 hover:-rotate-2"
-            />
-          </div>
-          <div className="w-2/3 ml-auto mr-8">
-            <FlipCard 
-              image={zineSplitShowcase.image4} 
-              backText={zineSplitShowcase.backText4} 
-              desc={zineSplitShowcase.desc4}
-              rotateClass="-rotate-3 hover:rotate-1"
-            />
-          </div>
-        </motion.div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-x-12 gap-y-24 items-start">
+          {zineSplitShowcase.items.map((item, index) => {
+            // Create a varied rotation based on index
+            const rotations = ["-rotate-3", "rotate-2", "-rotate-1", "rotate-3", "-rotate-2"];
+            const rotation = rotations[index % rotations.length];
+            const hoverRotation = "hover:rotate-0";
+            
+            return (
+              <motion.div 
+                key={index} 
+                variants={fadeUp} 
+                className="flex justify-center w-full"
+              >
+                <FlipCard 
+                  image={item.image} 
+                  backText={item.backText} 
+                  desc={item.desc}
+                  rotateClass={`${rotation} ${hoverRotation}`}
+                />
+              </motion.div>
+            );
+          })}
+        </div>
       </motion.div>
     </section>
   );
