@@ -59,7 +59,6 @@ export const SplashSequence: React.FC<SplashSequenceProps> = ({ onComplete, skip
             currentPhase={phase}
             onPhaseChange={setPhase}
             onUnlock={() => { setUnlocked(true); setStep('prompt'); }} 
-            onSkip={() => { setUnlocked(true); setStep('prompt'); }}
           />
         )}
         {step === 'prompt' && (
