@@ -87,9 +87,9 @@ export const Memories: React.FC = () => {
       </div>
 
       {/* Hero Section: Vintage TV */}
-      <div className="relative z-10 w-full max-w-lg mb-16 md:mb-24 mt-10">
-        <div className="relative aspect-[4/3] bg-[#2d2a28] rounded-[2.5rem] p-6 shadow-[0_0_60px_rgba(0,0,0,0.9)] border-[10px] border-[#3f3b39]">
-          <div className="w-full h-full bg-black rounded-[1.8rem] overflow-hidden relative border-4 border-[#1c1917]">
+      <div className="relative z-10 w-full max-w-5xl mb-16 md:mb-32 mt-10 px-2 md:px-0">
+        <div className="relative aspect-[4/3] bg-[#2d2a28] rounded-[2rem] md:rounded-[4rem] p-3 md:p-10 shadow-[0_0_80px_rgba(0,0,0,0.8)] border-[8px] md:border-[18px] border-[#3f3b39]">
+          <div className="w-full h-full bg-black rounded-[1.2rem] md:rounded-[3rem] overflow-hidden relative border-2 md:border-8 border-[#1c1917]">
              {/* TV Scanlines */}
             <div className="absolute inset-0 pointer-events-none z-30 opacity-30 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%]" />
             
@@ -131,15 +131,23 @@ export const Memories: React.FC = () => {
               </AnimatePresence>
             )}
           </div>
-          {/* TV Details */}
-          <div className="absolute right-[-15px] top-1/2 -translate-y-1/2 flex flex-col gap-4">
-            <div className="w-10 h-10 rounded-full bg-[#3f3b39] shadow-inner border-2 border-black/30" />
-            <div className="w-10 h-10 rounded-full bg-[#3f3b39] shadow-inner border-2 border-black/30" />
-            <div className="w-8 h-2 bg-black/40 rounded-full mt-2" />
+          {/* TV Details: Knobs & Buttons */}
+          <div className="absolute right-[1%] top-1/2 -translate-y-1/2 flex flex-col gap-3 md:gap-8 items-center pr-1 md:pr-4">
+            <div className="w-6 h-6 md:w-16 md:h-16 rounded-full bg-[#3f3b39] shadow-inner border-2 md:border-4 border-black/30 flex items-center justify-center">
+              <div className="w-1 h-3 md:w-2 md:h-8 bg-black/40 rounded-full rotate-45" />
+            </div>
+            <div className="w-6 h-6 md:w-16 md:h-16 rounded-full bg-[#3f3b39] shadow-inner border-2 md:border-4 border-black/30 flex items-center justify-center">
+              <div className="w-1 h-3 md:w-2 md:h-8 bg-black/40 rounded-full -rotate-12" />
+            </div>
+            <div className="hidden md:flex flex-col gap-2 mt-4">
+              <div className="w-12 h-1 bg-black/20 rounded-full" />
+              <div className="w-12 h-1 bg-black/20 rounded-full" />
+              <div className="w-12 h-1 bg-black/20 rounded-full" />
+            </div>
           </div>
         </div>
         {/* Shadow floor */}
-        <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-4/5 h-6 bg-black/40 blur-2xl rounded-full" />
+        <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-4/5 h-10 bg-black/60 blur-3xl rounded-full" />
       </div>
 
       {/* Dynamic Polaroids Grid - Responsive and Collision-free */}
