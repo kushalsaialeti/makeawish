@@ -316,14 +316,13 @@ const WishEditorWrapper = () => {
 };
 
 const WishEditor = () => {
-  const { scrapbookHero, splashScreen, zineSplitShowcase, coverflowGallery, zineArchive, giftSequence, memories, updateSection, currentWishSlug, currentWishId, isPublished } = useCmsStore();
+  const { scrapbookHero, splashScreen, zineSplitShowcase, coverflowGallery, zineArchive, giftSequence, memories, updateSection, currentWishSlug, isPublished } = useCmsStore();
   const navigate = useNavigate();
   const { id, tab } = useParams<{ id: string, tab: string }>();
   
   const activeTab = (tab as any) || 'splash';
   const setActiveTab = (newTab: string) => navigate(`/admin/edit/${id}/${newTab}`);
   const [uploadingField, setUploadingField] = useState<string | null>(null);
-  const [showSuccess, setShowSuccess] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Local state for forms
@@ -347,8 +346,6 @@ const WishEditor = () => {
 
   const handleSave = async (section: any, form: any) => {
     await updateSection(section, form);
-    setShowSuccess(true);
-    setTimeout(() => setShowSuccess(false), 3000);
   };
 
   const handleFileUpload = async (e: any, fieldName: string, setter: any) => {

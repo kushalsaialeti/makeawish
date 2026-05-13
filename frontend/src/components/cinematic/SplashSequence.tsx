@@ -119,9 +119,8 @@ const CombinedLockScreen: React.FC<{
   birthdayHeading?: string,
   currentPhase: 'countdown' | 'explosion',
   onPhaseChange: (phase: 'countdown' | 'explosion') => void,
-  onUnlock: () => void,
-  onSkip: () => void
-}> = ({ targetDate, correctPin, recipientName, splashImage, lockHeading, lockSubtext, birthdayHeading, currentPhase, onPhaseChange, onUnlock, onSkip }) => {
+  onUnlock: () => void
+}> = ({ targetDate, correctPin, recipientName, splashImage, lockHeading, lockSubtext, birthdayHeading, currentPhase, onPhaseChange, onUnlock }) => {
   const [time, setTime] = useState({ days: 0, hours: 0, mins: 0, secs: 0 });
   const phase = currentPhase;
   const setPhase = onPhaseChange;

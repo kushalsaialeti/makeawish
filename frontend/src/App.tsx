@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { BrowserRouter, Routes, Route, useParams, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { SmoothScroll } from './components/motion/SmoothScroll';
@@ -61,7 +61,7 @@ function WishView({ phase = 'unlock' }: { phase?: 'unlock' | 'prepare' | 'gift' 
     return <GiftSequence onComplete={() => navigate(`/${slug}/experience`)} />;
   }
 
-  return <Home slug={slug} />;
+  return <Home slug={slug || ''} />;
 }
 
 function Home({ slug }: { slug: string }) {
