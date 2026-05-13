@@ -86,17 +86,17 @@ export const Memories: React.FC = () => {
         </motion.button>
       </div>
 
-      {/* Hero Section: Vintage TV */}
-      <div className="relative z-10 w-full max-w-5xl mb-16 md:mb-32 mt-10 px-2 md:px-0">
-        <div className="relative aspect-[4/3] bg-[#2d2a28] rounded-[2rem] md:rounded-[4rem] p-3 md:p-10 shadow-[0_0_80px_rgba(0,0,0,0.8)] border-[8px] md:border-[18px] border-[#3f3b39]">
-          <div className="w-full h-full bg-black rounded-[1.2rem] md:rounded-[3rem] overflow-hidden relative border-2 md:border-8 border-[#1c1917]">
-             {/* TV Scanlines */}
-            <div className="absolute inset-0 pointer-events-none z-30 opacity-30 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%]" />
+      {/* Hero Section: Cinematic Monitor */}
+      <div className="relative z-10 w-full max-w-6xl mb-16 md:mb-32 mt-10 px-4 md:px-0">
+        <div className="relative aspect-video bg-[#1a1a1a] rounded-xl md:rounded-3xl p-1.5 md:p-4 shadow-[0_0_100px_rgba(0,0,0,0.6)] border-[4px] md:border-[12px] border-[#2a2a2a]">
+          <div className="w-full h-full bg-black rounded-lg md:rounded-2xl overflow-hidden relative border-1 md:border-4 border-[#0a0a0a]">
+             {/* Subtle Scanlines */}
+            <div className="absolute inset-0 pointer-events-none z-30 opacity-10 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%)] bg-[length:100%_2px]" />
             
-            {/* Old Film Overlay */}
-            <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden mix-blend-overlay opacity-60">
+            {/* Old Film Overlay (Cleaned) */}
+            <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden mix-blend-screen opacity-40">
                 <div className="absolute inset-0 animate-flicker bg-white/5" />
-                <div className="absolute inset-0 bg-[url('https://media.giphy.com/media/3o7TKMGpxPucV53Wnu/giphy.gif')] opacity-20 bg-cover mix-blend-screen grayscale" />
+                <div className="absolute inset-0 bg-white/5 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] bg-repeat" />
             </div>
 
             {memories.tvType === 'video' ? (
@@ -131,23 +131,20 @@ export const Memories: React.FC = () => {
               </AnimatePresence>
             )}
           </div>
-          {/* TV Details: Knobs & Buttons */}
-          <div className="absolute right-[1%] top-1/2 -translate-y-1/2 flex flex-col gap-3 md:gap-8 items-center pr-1 md:pr-4">
-            <div className="w-6 h-6 md:w-16 md:h-16 rounded-full bg-[#3f3b39] shadow-inner border-2 md:border-4 border-black/30 flex items-center justify-center">
-              <div className="w-1 h-3 md:w-2 md:h-8 bg-black/40 rounded-full rotate-45" />
-            </div>
-            <div className="w-6 h-6 md:w-16 md:h-16 rounded-full bg-[#3f3b39] shadow-inner border-2 md:border-4 border-black/30 flex items-center justify-center">
-              <div className="w-1 h-3 md:w-2 md:h-8 bg-black/40 rounded-full -rotate-12" />
-            </div>
-            <div className="hidden md:flex flex-col gap-2 mt-4">
-              <div className="w-12 h-1 bg-black/20 rounded-full" />
-              <div className="w-12 h-1 bg-black/20 rounded-full" />
-              <div className="w-12 h-1 bg-black/20 rounded-full" />
-            </div>
+          {/* Monitor Indicator */}
+          <div className="absolute bottom-[2%] right-[2%] flex items-center gap-2">
+            <div className="w-1 h-1 md:w-2 md:h-2 rounded-full bg-blue-500/50 shadow-[0_0_10px_rgba(59,130,246,0.8)] animate-pulse" />
           </div>
         </div>
-        {/* Shadow floor */}
-        <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-4/5 h-10 bg-black/60 blur-3xl rounded-full" />
+        
+        {/* Monitor Stand */}
+        <div className="hidden md:flex flex-col items-center">
+          <div className="w-32 h-6 bg-[#2a2a2a] -mt-1" />
+          <div className="w-64 h-4 bg-[#1a1a1a] rounded-t-2xl shadow-2xl" />
+        </div>
+
+        {/* Ambient Glow */}
+        <div className="absolute -inset-10 bg-blue-500/5 blur-[100px] rounded-full pointer-events-none z-[-1]" />
       </div>
 
       {/* Dynamic Polaroids Grid - Responsive and Collision-free */}
