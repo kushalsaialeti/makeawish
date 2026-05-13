@@ -966,20 +966,56 @@ const WishEditor = () => {
                     <div className="space-y-4">
                        <label className="text-[10px] uppercase tracking-widest text-white/40">TV Content Type</label>
                        <select value={memoriesForm.tvType} onChange={e => setMemoriesForm({...memoriesForm, tvType: e.target.value as any})} className="w-full bg-[#2d2a28] border border-white/10 rounded-xl px-4 py-3">
-                          <option value="video">Single Video</option>
-                          <option value="slideshow">Slideshow</option>
+                          <option value="video">Video Sequence</option>
+                          <option value="slideshow">Photo Slideshow</option>
                        </select>
                     </div>
-                    <div className="space-y-4">
-                       <label className="text-[10px] uppercase tracking-widest text-white/40">TV Video (Direct Upload or URL)</label>
-                       <div className="flex gap-2">
-                          <input type="text" value={memoriesForm.tvVideoUrl} onChange={e => setMemoriesForm({...memoriesForm, tvVideoUrl: e.target.value})} placeholder="Video URL..." className="flex-1 bg-[#2d2a28] border border-white/10 rounded-xl px-4 py-3" />
-                          <label className="bg-white/10 hover:bg-white/20 px-6 py-3 rounded-xl cursor-pointer font-bold text-xs flex items-center transition-all border border-white/5">
-                             {uploadingField === 'tvVideoUrl' ? '...' : 'UPLOAD'}
-                             <input type="file" className="hidden" accept="video/*" onChange={e => handleFileUpload(e, 'tvVideoUrl', setMemoriesForm)} />
-                          </label>
+
+                    {memoriesForm.tvType === 'video' && (
+                       <div className="md:col-span-2 space-y-4">
+                          <div className="flex justify-between items-center">
+                             <label className="text-[10px] uppercase tracking-widest text-white/40">Video Sequence (Plays one after another)</label>
+                             <button 
+                               onClick={() => setMemoriesForm({ ...memoriesForm, tvVideoUrls: [...(memoriesForm.tvVideoUrls || []), ''] })}
+                               className="text-[10px] bg-white/10 hover:bg-white/20 px-3 py-1 rounded-lg uppercase tracking-widest font-bold"
+                             >
+                               + Add Video
+                             </button>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                             {(memoriesForm.tvVideoUrls || []).map((vUrl, idx) => (
+                                <div key={idx} className="relative aspect-video rounded-xl overflow-hidden bg-black/40 border border-white/5 group">
+                                   <button 
+                                      onClick={() => {
+                                        const newVideos = memoriesForm.tvVideoUrls.filter((_, i) => i !== idx);
+                                        setMemoriesForm({ ...memoriesForm, tvVideoUrls: newVideos });
+                                      }}
+                                      className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 w-6 h-6 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all shadow-lg z-10 text-xs"
+                                    >
+                                      ×
+                                    </button>
+                                   <div className="w-full h-full flex flex-col items-center justify-center p-4">
+                                      <input 
+                                        type="text" 
+                                        value={vUrl} 
+                                        placeholder="Video URL..."
+                                        onChange={e => {
+                                          const newVideos = [...memoriesForm.tvVideoUrls];
+                                          newVideos[idx] = e.target.value;
+                                          setMemoriesForm({ ...memoriesForm, tvVideoUrls: newVideos });
+                                        }}
+                                        className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-[10px] mb-2"
+                                      />
+                                      <label className="w-full bg-white/5 hover:bg-white/10 py-2 rounded-lg cursor-pointer text-center text-[10px] font-bold uppercase tracking-widest border border-white/5">
+                                         {uploadingField === `tvVideoUrls-${idx}` ? '...' : 'UPLOAD FILE'}
+                                         <input type="file" className="hidden" accept="video/*" onChange={e => handleArrayFileUpload(e, idx, '', setMemoriesForm, 'tvVideoUrls')} />
+                                      </label>
+                                   </div>
+                                </div>
+                             ))}
+                          </div>
                        </div>
-                    </div>
+                    )}
 
                     {memoriesForm.tvType === 'slideshow' && (
                        <div className="md:col-span-2 space-y-4">

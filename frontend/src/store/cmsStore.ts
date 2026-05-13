@@ -79,7 +79,7 @@ export interface ZineArchiveContent {
 export interface PolaroidItem { url: string; text: string; }
 export interface MemoriesContent {
   tvType: 'video' | 'slideshow';
-  tvVideoUrl: string;
+  tvVideoUrls: string[];
   tvSlideshowImages: string[];
   polaroids: PolaroidItem[];
 }
@@ -188,7 +188,7 @@ const defaultGiftSequence: GiftSequenceContent = {
 };
 
 const defaultMemories: MemoriesContent = {
-  tvType: 'slideshow', tvVideoUrl: '', tvSlideshowImages: [],
+  tvType: 'slideshow',    tvVideoUrls: [], tvSlideshowImages: [],
   polaroids: Array(7).fill({ url: 'https://images.unsplash.com/photo-1516627145497-ae6968895b74', text: 'A memory...' })
 };
 

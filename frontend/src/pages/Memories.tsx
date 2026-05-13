@@ -8,6 +8,7 @@ export const Memories: React.FC = () => {
   const { memories, currentWishSlug, fetchWishBySlug, subscribeToWish, isLoading } = useCmsStore();
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [flippedIndex, setFlippedIndex] = useState<number | null>(null);
 
   useEffect(() => {
@@ -90,14 +91,28 @@ export const Memories: React.FC = () => {
         <div className="relative aspect-[4/3] bg-[#2d2a28] rounded-[2.5rem] p-6 shadow-[0_0_60px_rgba(0,0,0,0.9)] border-[10px] border-[#3f3b39]">
           <div className="w-full h-full bg-black rounded-[1.8rem] overflow-hidden relative border-4 border-[#1c1917]">
              {/* TV Scanlines */}
-            <div className="absolute inset-0 pointer-events-none z-20 opacity-30 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%]" />
+            <div className="absolute inset-0 pointer-events-none z-30 opacity-30 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%]" />
             
-            {memories.tvType === 'video' && memories.tvVideoUrl ? (
-              <video 
-                src={memories.tvVideoUrl} 
-                autoPlay muted loop playsInline 
-                className="w-full h-full object-cover grayscale-[0.2]"
-              />
+            {/* Old Film Overlay */}
+            <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden mix-blend-overlay opacity-60">
+                <div className="absolute inset-0 animate-flicker bg-white/5" />
+                <div className="absolute inset-0 bg-[url('https://media.giphy.com/media/3o7TKMGpxPucV53Wnu/giphy.gif')] opacity-20 bg-cover mix-blend-screen grayscale" />
+            </div>
+
+            {memories.tvType === 'video' ? (
+              <div className="w-full h-full bg-black">
+                {memories.tvVideoUrls && memories.tvVideoUrls.length > 0 ? (
+                  <video 
+                    key={currentVideoIndex}
+                    src={memories.tvVideoUrls[currentVideoIndex]} 
+                    autoPlay muted playsInline 
+                    onEnded={() => setCurrentVideoIndex((prev) => (prev + 1) % memories.tvVideoUrls.length)}
+                    className="w-full h-full object-cover grayscale-[0.4] sepia-[0.3] contrast-125"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-white/10 font-mono text-[10px] uppercase tracking-widest">No Video Content</div>
+                )}
+              </div>
             ) : (
               <AnimatePresence mode="wait">
                   {memories.tvSlideshowImages[currentSlide] ? (
@@ -108,7 +123,7 @@ export const Memories: React.FC = () => {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       transition={{ duration: 1 }}
-                      className="w-full h-full object-cover grayscale-[0.2]"
+                      className="w-full h-full object-cover grayscale-[0.4] sepia-[0.3] contrast-125"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-white/10 font-mono text-[10px] uppercase tracking-widest">No Slideshow Content</div>
@@ -205,6 +220,32 @@ export const Memories: React.FC = () => {
       <style>{`
         .perspective-1000 {
           perspective: 1000px;
+        }
+        @keyframes flicker {
+          0% { opacity: 0.1; }
+          5% { opacity: 0.2; }
+          10% { opacity: 0.1; }
+          15% { opacity: 0.3; }
+          20% { opacity: 0.15; }
+          25% { opacity: 0.1; }
+          30% { opacity: 0.25; }
+          35% { opacity: 0.1; }
+          40% { opacity: 0.15; }
+          45% { opacity: 0.2; }
+          50% { opacity: 0.1; }
+          55% { opacity: 0.3; }
+          60% { opacity: 0.15; }
+          65% { opacity: 0.1; }
+          70% { opacity: 0.25; }
+          75% { opacity: 0.1; }
+          80% { opacity: 0.15; }
+          85% { opacity: 0.2; }
+          90% { opacity: 0.1; }
+          95% { opacity: 0.3; }
+          100% { opacity: 0.15; }
+        }
+        .animate-flicker {
+          animation: flicker 0.15s infinite;
         }
       `}</style>
     </div>
