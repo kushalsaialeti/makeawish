@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCmsStore } from '../../store/cmsStore';
 import confetti from 'canvas-confetti';
+import { Eyebrow, Handwritten } from '../ui/Typography';
 
 interface SplashSequenceProps {
   onComplete: () => void;
@@ -13,28 +14,24 @@ export const SplashSequence: React.FC<SplashSequenceProps> = ({ onComplete, skip
   const [step, setStep] = useState<'locked' | 'prompt'>(skipToPrompt ? 'prompt' : 'locked');
   const [phase, setPhase] = useState<'countdown' | 'explosion'>('countdown');
 
-  useEffect(() => {
-    // Content is now fetched by the parent component (WishView or AdminDashboard)
-  }, []);
-
   if (!splashScreen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] text-white font-sans flex flex-col items-center justify-center overflow-hidden">
-      {/* Global Birthday Backdrop - Always visible */}
+    <div className="fixed inset-0 z-[100] text-white font-sans flex flex-col items-center justify-center overflow-x-hidden overflow-y-auto bg-[#151111]">
+      {/* Global Birthday Backdrop */}
       <div 
-        className="absolute inset-0 z-[-1] scale-110"
+        className="absolute inset-0 z-[-1] scale-105 transition-transform duration-1000 pointer-events-none"
         style={{ 
           backgroundImage: `url("${splashScreen.bgImage || 'https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=2000&auto=format&fit=crop'}")`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          filter: 'blur(4px) brightness(0.5)'
+          filter: 'blur(6px) brightness(0.4)'
         }} 
       />
 
-      {/* Subtle Pink Tint Overlay for PIN page (optional, but keep it very transparent if used) */}
+      {/* Subtle Rose Overlay */}
       <motion.div 
-        className="absolute inset-0 z-[-2] bg-pink-500/10"
+        className="absolute inset-0 z-[-2] bg-pink-900/15 pointer-events-none"
         initial={false}
         animate={{ opacity: phase === 'explosion' ? 1 : 0 }}
       />
@@ -42,8 +39,9 @@ export const SplashSequence: React.FC<SplashSequenceProps> = ({ onComplete, skip
       {/* Rope Polaroids Background */}
       <RopePolaroids images={splashScreen.ropePolaroids || []} />
 
-      {/* Gradient Overlay for better text readability */}
-      <div className="absolute inset-0 z-[-1] bg-gradient-to-b from-black/40 via-transparent to-black/60" />
+      {/* Gradient Overlay for superior contrast */}
+      <div className="absolute inset-0 z-[-1] bg-gradient-to-b from-black/60 via-black/30 to-black/70 pointer-events-none" />
+      
       <AnimatePresence mode="wait">
         {step === 'locked' && (
           <CombinedLockScreen 
@@ -80,10 +78,10 @@ const RopePolaroids: React.FC<{ images: string[] }> = ({ images }) => {
   if (images.length === 0) return null;
   
   return (
-    <div className="absolute inset-0 z-[-1] pointer-events-none opacity-20">
-      <div className="absolute top-[12%] left-0 w-full h-[2px] bg-white/20 shadow-[0_0_15px_rgba(255,255,255,0.4)]" />
-      <div className="absolute top-[12%] left-0 w-full flex justify-around px-10">
-        {images.map((img, i) => (
+    <div className="absolute inset-0 z-[-1] pointer-events-none opacity-20 sm:opacity-25 overflow-hidden">
+      <div className="absolute top-[10%] sm:top-[12%] left-0 w-full h-[1px] bg-white/25 shadow-[0_0_15px_rgba(255,255,255,0.4)]" />
+      <div className="absolute top-[10%] sm:top-[12%] left-0 w-full flex justify-around px-4 sm:px-10">
+        {images.slice(0, 4).map((img, i) => (
           <motion.div 
             key={i}
             initial={{ y: -20, rotate: i % 2 === 0 ? -10 : 10 }}
@@ -94,10 +92,9 @@ const RopePolaroids: React.FC<{ images: string[] }> = ({ images }) => {
             transition={{ duration: 4 + Math.random() * 2, repeat: Infinity, ease: "easeInOut" }}
             className="relative"
           >
-            {/* Clothespin */}
-            <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-2.5 h-5 bg-amber-100/40 rounded-sm z-10" />
-            <div className="w-24 h-28 md:w-32 md:h-40 bg-white/90 p-1.5 pb-6 md:p-2 md:pb-10 shadow-2xl rotate-1">
-              <img src={img} className="w-full h-full object-cover grayscale-[0.8]" alt="bg-mem" />
+            <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-2 h-4 bg-amber-100/60 rounded-sm z-10" />
+            <div className="w-16 h-20 sm:w-24 sm:h-28 md:w-32 md:h-40 bg-white p-1 sm:p-1.5 pb-4 sm:pb-6 md:pb-8 shadow-2xl rounded-sm">
+              <img src={img} className="w-full h-full object-cover grayscale-[0.6]" alt="bg-mem" />
             </div>
           </motion.div>
         ))}
@@ -106,7 +103,7 @@ const RopePolaroids: React.FC<{ images: string[] }> = ({ images }) => {
   );
 };
 
-// --- STEP 1: NEW POLAROID & DIAL PAD LAYOUT ---
+// --- POLAROID & DIAL PAD LAYOUT ---
 const CombinedLockScreen: React.FC<{ 
   targetDate: string, 
   correctPin: {m:string, d:string, y:string}, 
@@ -143,7 +140,7 @@ const CombinedLockScreen: React.FC<{
         setTime({ days: 0, hours: 0, mins: 0, secs: 0 });
         if (phase !== 'explosion') {
           setPhase('explosion');
-          triggerBlast(); // Trigger blast when timer hits zero
+          triggerBlast();
         }
       }
     };
@@ -156,15 +153,11 @@ const CombinedLockScreen: React.FC<{
     const duration = 3 * 1000;
     const animationEnd = Date.now() + duration;
     const defaults = { startVelocity: 45, spread: 360, ticks: 100, zIndex: 1000 };
-
     const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
     const interval: any = setInterval(function() {
       const timeLeft = animationEnd - Date.now();
-
-      if (timeLeft <= 0) {
-        return clearInterval(interval);
-      }
+      if (timeLeft <= 0) return clearInterval(interval);
 
       const particleCount = 70 * (timeLeft / duration);
       confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
@@ -173,14 +166,14 @@ const CombinedLockScreen: React.FC<{
   };
 
   const handleKeyPress = (val: string) => {
-    if (unlocked || phase === 'countdown') return; // Strict guard: No entry during countdown
+    if (unlocked || phase === 'countdown') return;
     
     if (val === 'ENTER') {
       const expectedPin = `${correctPin.m}${correctPin.d}${correctPin.y}`;
       if (pin === expectedPin || pin === '12162005') {
         setUnlocked(true);
         triggerBlast();
-        setTimeout(onUnlock, 2500);
+        setTimeout(onUnlock, 2200);
       } else {
         setError(true);
         setPin('');
@@ -197,174 +190,147 @@ const CombinedLockScreen: React.FC<{
     <motion.div 
       initial={{ opacity: 0 }} 
       animate={{ opacity: 1 }} 
-      exit={{ opacity: 0, scale: 1.1 }}
-      className="flex flex-col items-center justify-start w-full min-h-screen p-4 py-12 md:py-20 relative overflow-y-auto scrollbar-hide"
+      exit={{ opacity: 0, scale: 1.05 }}
+      className="flex flex-col items-center justify-start w-full min-h-screen p-4 py-8 sm:py-12 md:py-16 relative overflow-y-auto"
     >
-      {/* Independent Timer (In-flow to prevent overlap) */}
-      <div className="w-full flex justify-center mb-12 md:mb-16 pointer-events-none">
+      {/* Timer Section */}
+      <div className="w-full flex justify-center mb-8 sm:mb-12 pointer-events-none px-2">
         <div className="flex flex-col items-center">
           {phase === 'explosion' ? (
-            <motion.h1 
-              initial={{ scale: 0.5 }} animate={{ scale: 1.2 }}
-              className="text-3xl md:text-6xl font-black text-white text-center drop-shadow-lg px-4"
-            >
-              {(birthdayHeading || `HAPPY BIRTHDAY ${recipientName}!`).toUpperCase()}
-            </motion.h1>
+            <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center px-3">
+              <Eyebrow accent className="mb-2 text-[10px] sm:text-xs">A SPECIAL MILESTONE</Eyebrow>
+              <h1 className="font-display italic text-3xl sm:text-4xl md:text-6xl text-white drop-shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
+                {(birthdayHeading || `Happy Birthday ${recipientName}!`)}
+              </h1>
+            </motion.div>
           ) : (
-            <div className="flex space-x-2 md:space-x-4 bg-white/10 backdrop-blur-md px-6 py-4 rounded-3xl border border-white/20 shadow-2xl">
-               <TimeDigit value={time.days} label="D" />
-               <span className="text-xl md:text-2xl font-bold animate-pulse pt-1">:</span>
-               <TimeDigit value={time.hours} label="H" />
-               <span className="text-xl md:text-2xl font-bold animate-pulse pt-1">:</span>
-               <TimeDigit value={time.mins} label="M" />
-               <span className="text-xl md:text-2xl font-bold animate-pulse pt-1">:</span>
-               <TimeDigit value={time.secs} label="S" />
+            <div className="flex items-center gap-2 sm:gap-4 md:gap-5 bg-black/40 backdrop-blur-xl px-4 sm:px-8 py-3 sm:py-4 rounded-2xl sm:rounded-[2rem] border border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+              <TimeDigit value={time.days} label="Days" />
+              <span className="text-base sm:text-xl font-light text-pink-400 opacity-60">:</span>
+              <TimeDigit value={time.hours} label="Hours" />
+              <span className="text-base sm:text-xl font-light text-pink-400 opacity-60">:</span>
+              <TimeDigit value={time.mins} label="Mins" />
+              <span className="text-base sm:text-xl font-light text-pink-400 opacity-60">:</span>
+              <TimeDigit value={time.secs} label="Secs" />
             </div>
           )}
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row items-center justify-center gap-12 md:gap-24 w-full max-w-6xl">
+      <div className="flex flex-col md:flex-row items-center justify-center gap-8 sm:gap-12 md:gap-16 w-full max-w-5xl px-2">
         
         {/* Left Side: Polaroid */}
         <motion.div 
-          initial={{ rotate: -5, x: -50, opacity: 0 }} animate={{ rotate: -2, x: 0, opacity: 1 }}
-          className="relative bg-white p-4 pb-16 shadow-2xl rounded-sm"
+          initial={{ rotate: -5, x: -30, opacity: 0 }} 
+          animate={{ rotate: -2, x: 0, opacity: 1 }}
+          className="relative bg-white p-3 sm:p-4 pb-10 sm:pb-14 shadow-2xl rounded-sm border border-white/20"
         >
-          {/* Blue Bow Decoration */}
-          <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-20 w-24 md:w-32">
-            <svg viewBox="0 0 100 60" className="drop-shadow-md">
-              <path d="M50 30 C 30 10, 10 10, 10 30 C 10 50, 30 50, 50 30 C 70 10, 90 10, 90 30 C 90 50, 70 50, 50 30" fill="#a2d2ff" stroke="white" strokeWidth="2" />
-              <circle cx="50" cy="30" r="5" fill="#a2d2ff" stroke="white" strokeWidth="2" />
-              <path d="M50 35 L 40 55 M 50 35 L 60 55" stroke="#a2d2ff" strokeWidth="4" strokeLinecap="round" />
-            </svg>
+          <div className="w-52 h-52 sm:w-64 sm:h-64 md:w-80 md:h-80 overflow-hidden bg-gray-100 rounded-sm">
+            <img src={splashImage} className="w-full h-full object-cover contrast-110" alt="Special Memory" />
           </div>
-
-          <div className="w-64 h-64 md:w-80 md:h-80 overflow-hidden bg-gray-100">
-            <img src={splashImage} className="w-full h-full object-cover" alt="Memory" />
-          </div>
-
-          {/* Teddy Bear Decoration */}
-          <div className="absolute -bottom-10 -left-10 w-24 md:w-32 z-20">
-             <TeddyBear />
+          <div className="absolute bottom-3 sm:bottom-4 left-0 w-full text-center">
+            <Handwritten color="#5c381c" className="text-sm sm:text-base md:text-lg">a memory of you</Handwritten>
           </div>
         </motion.div>
 
-        {/* Right Side: Message or Dial Pad */}
-        <div className="flex flex-col items-center">
+        {/* Right Side: Countdown Message or Passcode Pad */}
+        <div className="flex flex-col items-center w-full max-w-sm">
           {phase === 'countdown' ? (
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex flex-col items-center text-center max-w-xs space-y-8"
+              className="flex flex-col items-center text-center max-w-sm space-y-4 sm:space-y-6"
             >
-              <div className="relative">
-                <motion.div 
-                  animate={{ scale: [1, 1.1, 1] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className="w-32 h-32 md:w-48 md:h-48 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-xl border-4 border-white/30"
-                >
-                  <span className="text-6xl">🔒</span>
-                </motion.div>
-                <div className="absolute -bottom-4 -right-4 bg-white text-blue-500 p-2 rounded-2xl font-black text-sm shadow-xl rotate-12">
-                  WAITING...
-                </div>
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-2xl sm:text-3xl shadow-xl">
+                🔒
               </div>
               
-              <div className="space-y-4">
-                <h2 className="text-3xl md:text-4xl font-black text-white drop-shadow-lg">
+              <div className="space-y-2 sm:space-y-3">
+                <h2 className="font-display italic text-2xl sm:text-3xl text-white leading-snug">
                   {new Date(targetDate).getTime() > new Date().getTime() ? (
                     <span>
-                        Hold your breath! Open exactly at <br />
+                      Opens precisely at <br />
+                      <span className="text-pink-300 font-sans not-italic font-bold text-base sm:text-lg md:text-xl">
                         {(() => {
-                        const date = new Date(targetDate);
-                        return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })+
-                                ' ('+
-                                date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })+
-                                ')';
+                          const date = new Date(targetDate);
+                          return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) +
+                                 ' • ' +
+                                 date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
                         })()}
-                        ✨
+                      </span>
                     </span>
-                    ) : (
-                    <span>SURPRISE!!! 🎉</span>
-                    )}
-
+                  ) : (
+                    <span>The Moment Has Arrived ✨</span>
+                  )}
                 </h2>
-                <p className="text-blue-100 text-lg font-medium italic opacity-80">
-                  Your special surprise is being prepared. The secret code will unlock as soon as the timer hits zero!
+                <p className="font-body text-xs sm:text-sm text-white/70 leading-relaxed max-w-xs mx-auto">
+                  Your personalized birthday experience is locked until the countdown completes.
                 </p>
               </div>
-
-              <motion.div 
-                animate={{ y: [0, -10, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-                className="text-4xl"
-              >
-                💝
-              </motion.div>
             </motion.div>
           ) : (
             <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="flex flex-col items-center"
+              className="flex flex-col items-center bg-[#1e1a1a]/85 backdrop-blur-xl p-5 sm:p-8 rounded-3xl sm:rounded-[2.5rem] border border-white/10 shadow-2xl w-full"
             >
-              <div className="flex flex-col items-end mb-6 w-full">
-                <h2 className="text-2xl md:text-3xl font-bold tracking-wide drop-shadow-md text-white whitespace-nowrap">
-                  {lockHeading || 'Enter the passcode'}
+              <div className="flex flex-col items-center mb-5 text-center">
+                <Eyebrow accent className="mb-1 text-[10px] sm:text-xs">SECURITY ACCESS</Eyebrow>
+                <h2 className="font-display italic text-2xl sm:text-3xl text-white">
+                  {lockHeading || 'Enter Passcode'}
                 </h2>
                 {lockSubtext && (
-                  <p className="text-[10px] md:text-xs font-medium opacity-60 text-white italic -mt-1 tracking-widest uppercase">
+                  <p className="font-body text-[10px] sm:text-[11px] text-white/50 mt-0.5 uppercase tracking-widest">
                     {lockSubtext}
                   </p>
                 )}
               </div>
               
               {/* PIN Boxes (8 numbers) */} 
-              <div className="flex gap-2 mb-8">
+              <div className="flex gap-1.5 sm:gap-2 mb-5">
                 {['M', 'M', 'D', 'D', 'Y', 'Y', 'Y', 'Y'].map((char, i) => (
                   <motion.div 
                     key={i}
-                    animate={error ? { x: [-5, 5, -5, 5, 0] } : {}}
-                    className={`w-8 h-10 md:w-10 md:h-12 border-2 rounded-lg flex items-center justify-center text-xl font-bold transition-all ${
-                      pin.length > i ? 'bg-white text-pink-500 border-white' : 'border-white/40 bg-transparent text-white/30'
+                    animate={error ? { x: [-4, 4, -4, 4, 0] } : {}}
+                    className={`w-7 h-9 sm:w-8 sm:h-10 md:w-9 md:h-11 border rounded-lg sm:rounded-xl flex items-center justify-center font-body text-xs sm:text-sm md:text-base font-bold transition-all ${
+                      pin.length > i 
+                        ? 'bg-gradient-to-br from-pink-500 to-rose-600 text-white border-transparent shadow-[0_0_12px_rgba(219,39,119,0.5)]' 
+                        : 'border-white/15 bg-black/30 text-white/30'
                     }`}
                   >
-                    {pin.length > i ? '*' : char}
+                    {pin.length > i ? '•' : char}
                   </motion.div>
                 ))}
               </div>
 
-              {/* Circular Dial Pad */}
-              <div className="grid grid-cols-3 gap-4 md:gap-6">
+              {/* Dial Pad */}
+              <div className="grid grid-cols-3 gap-2.5 sm:gap-3 md:gap-4">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, '*', 0, '#'].map((val) => (
                   <motion.button
                     key={val}
-                    whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                    whileHover={{ scale: 1.08 }} 
+                    whileTap={{ scale: 0.92 }}
                     onClick={() => typeof val === 'number' && handleKeyPress(val.toString())}
-                    className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-white text-pink-500 text-xl font-bold shadow-lg hover:bg-gray-100 transition-colors"
+                    className="w-11 h-11 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-xl sm:rounded-2xl bg-white/10 hover:bg-white/20 text-white font-body font-bold text-base sm:text-lg border border-white/10 shadow-lg transition-all flex items-center justify-center"
                   >
                     {val}
                   </motion.button>
                 ))}
-                {/* Control Buttons Below */}
-                <div className="col-span-3 flex justify-center gap-4 mt-2">
-                   <motion.button
-                    whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                <div className="col-span-3 flex justify-center gap-2 sm:gap-3 mt-2">
+                  <button
                     onClick={() => handleKeyPress('DEL')}
-                    className="px-6 py-2 rounded-full bg-red-400 text-white font-bold text-sm shadow-md"
+                    className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white font-body text-[11px] sm:text-xs font-bold uppercase tracking-widest border border-white/10 transition-all"
                   >
                     DELETE
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                  </button>
+                  <button
                     onClick={() => handleKeyPress('ENTER')}
-                    className={`px-8 py-2 rounded-full font-bold text-sm shadow-md transition-colors ${
-                      unlocked ? 'bg-green-500 text-white' : 'bg-white text-pink-500'
+                    className={`px-5 sm:px-7 py-2 sm:py-2.5 rounded-xl font-body text-[11px] sm:text-xs font-black uppercase tracking-widest transition-all shadow-lg ${
+                      unlocked ? 'bg-green-500 text-white' : 'bg-gradient-to-r from-pink-600 to-rose-600 text-white'
                     }`}
                   >
-                    {unlocked ? 'UNLOCKED' : 'ENTER'}
-                  </motion.button>
+                    {unlocked ? 'UNLOCKED ✨' : 'ENTER →'}
+                  </button>
                 </div>
               </div>
             </motion.div>
@@ -372,38 +338,19 @@ const CombinedLockScreen: React.FC<{
         </div>
 
       </div>
-
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;700&display=swap');
-        * { font-family: 'Fredoka', sans-serif; }
-      `}</style>
     </motion.div>
   );
 };
 
-// --- COMPONENTS ---
-
 const TimeDigit = ({ value, label }: { value: number, label: string }) => (
-  <div className="flex flex-col items-center min-w-[50px]">
-    <div className="text-2xl font-black">{value.toString().padStart(2, '0')}</div>
-    <div className="text-[10px] font-bold opacity-70 uppercase tracking-tighter">{label}</div>
+  <div className="flex flex-col items-center min-w-[42px] sm:min-w-[54px]">
+    <div className="font-body text-xl sm:text-2xl md:text-3xl font-black text-white tabular-nums tracking-tight">
+      {value.toString().padStart(2, '0')}
+    </div>
+    <div className="font-body text-[9px] sm:text-[10px] font-semibold text-white/40 uppercase tracking-[0.16em] sm:tracking-[0.18em] mt-0.5">
+      {label}
+    </div>
   </div>
-);
-
-const TeddyBear = () => (
-  <svg viewBox="0 0 100 100" className="drop-shadow-lg">
-    <circle cx="50" cy="55" r="30" fill="#f8f9fa" stroke="#e9ecef" strokeWidth="2" /> {/* Body */}
-    <circle cx="50" cy="35" r="22" fill="#f8f9fa" stroke="#e9ecef" strokeWidth="2" /> {/* Head */}
-    <circle cx="32" cy="22" r="8" fill="#f8f9fa" stroke="#e9ecef" strokeWidth="2" /> {/* Ear L */}
-    <circle cx="68" cy="22" r="8" fill="#f8f9fa" stroke="#e9ecef" strokeWidth="2" /> {/* Ear R */}
-    <circle cx="43" cy="32" r="3" fill="#333" /> {/* Eye L */}
-    <circle cx="57" cy="32" r="3" fill="#333" /> {/* Eye R */}
-    <path d="M45 42 Q 50 47 55 42" fill="none" stroke="#ff85a1" strokeWidth="2" strokeLinecap="round" /> {/* Mouth */}
-    <circle cx="35" cy="80" r="10" fill="#f8f9fa" stroke="#e9ecef" strokeWidth="2" /> {/* Leg L */}
-    <circle cx="65" cy="80" r="10" fill="#f8f9fa" stroke="#e9ecef" strokeWidth="2" /> {/* Leg R */}
-    <circle cx="28" cy="50" r="8" fill="#f8f9fa" stroke="#e9ecef" strokeWidth="2" /> {/* Arm L */}
-    <circle cx="72" cy="50" r="8" fill="#f8f9fa" stroke="#e9ecef" strokeWidth="2" /> {/* Arm R */}
-  </svg>
 );
 
 const PromptScreen: React.FC<{ heading: string, btnNow: string, btnLater: string, onNext: () => void }> = ({ heading, btnNow, btnLater, onNext }) => {
@@ -411,53 +358,40 @@ const PromptScreen: React.FC<{ heading: string, btnNow: string, btnLater: string
 
   return (
     <motion.div 
-      initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
-      className="flex flex-col items-center justify-center w-full h-full px-4 text-center relative"
+      initial={{ opacity: 0, scale: 0.95 }} 
+      animate={{ opacity: 1, scale: 1 }} 
+      exit={{ opacity: 0 }}
+      className="flex flex-col items-center justify-center w-full min-h-screen px-4 py-8 text-center relative max-w-2xl mx-auto"
     >
-      {/* Background Polaroids */}
-      {giftSequence && (
-        <>
-          {giftSequence.questionBgImageLeft && (
-            <motion.div 
-              initial={{ x: -100, rotate: -25, opacity: 0 }}
-              animate={{ x: 0, rotate: -15, opacity: 0.4 }}
-              className="absolute top-20 left-10 w-40 h-48 md:w-56 md:h-64 bg-white p-2 shadow-2xl border border-gray-200 hidden sm:block"
-            >
-              <img src={giftSequence.questionBgImageLeft} alt="bg" className="w-full h-32 md:h-48 object-cover" />
-              <div className="h-8" />
-            </motion.div>
-          )}
+      <Eyebrow accent className="mb-4 text-[10px] sm:text-xs">SPECIAL INVITATION</Eyebrow>
 
-          {giftSequence.questionBgImageRight && (
-            <motion.div 
-              initial={{ x: 100, rotate: 25, opacity: 0 }}
-              animate={{ x: 0, rotate: 12, opacity: 0.4 }}
-              className="absolute bottom-20 right-10 w-40 h-48 md:w-56 md:h-64 bg-white p-2 shadow-2xl border border-gray-200 hidden sm:block"
-            >
-              <img src={giftSequence.questionBgImageRight} alt="bg" className="w-full h-32 md:h-48 object-cover" />
-              <div className="h-8" />
-            </motion.div>
-          )}
-        </>
-      )}
-
-      <h1 className="text-3xl md:text-5xl font-black mb-12 drop-shadow-lg max-w-2xl leading-tight z-10">
+      <h1 className="font-display italic text-2xl sm:text-3xl md:text-5xl text-white mb-6 sm:mb-8 drop-shadow-lg leading-tight px-2">
         {heading}
       </h1>
 
       {giftSequence?.promptSticker && (
         <motion.div
-          animate={{ y: [0, -10, 0], rotate: [0, 5, -5, 0] }}
-          transition={{ repeat: Infinity, duration: 2 }}
-          className="mb-12 z-10"
+          animate={{ y: [0, -8, 0], rotate: [0, 4, -4, 0] }}
+          transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+          className="mb-8 sm:mb-10"
         >
-          <img src={giftSequence.promptSticker} alt="sticker" className="w-32 h-32 md:w-48 md:h-48 object-contain" />
+          <img src={giftSequence.promptSticker} alt="sticker" className="w-28 h-28 sm:w-36 sm:h-36 md:w-44 md:h-44 object-contain drop-shadow-xl" />
         </motion.div>
       )}
 
-      <div className="flex gap-6 z-10">
-        <button onClick={onNext} className="px-10 py-4 bg-white text-[#3a86ff] font-black rounded-full shadow-xl hover:bg-gray-100 transition-all uppercase tracking-widest">{btnNow}</button>
-        <button onClick={onNext} className="px-10 py-4 border-2 border-white/50 text-white font-black rounded-full shadow-xl hover:bg-white/10 transition-all uppercase tracking-widest">{btnLater}</button>
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full justify-center max-w-xs sm:max-w-none">
+        <button 
+          onClick={onNext} 
+          className="px-8 sm:px-10 py-3.5 sm:py-4 bg-gradient-to-r from-pink-600 via-rose-600 to-amber-600 text-white font-body font-black rounded-2xl shadow-xl hover:opacity-90 transition-all uppercase tracking-[0.16em] sm:tracking-[0.18em] text-xs active:scale-95"
+        >
+          {btnNow} ✨
+        </button>
+        <button 
+          onClick={onNext} 
+          className="px-6 sm:px-8 py-3.5 sm:py-4 bg-white/5 hover:bg-white/10 border border-white/15 text-white/80 font-body font-bold rounded-2xl transition-all uppercase tracking-[0.16em] sm:tracking-[0.18em] text-xs"
+        >
+          {btnLater}
+        </button>
       </div>
     </motion.div>
   );

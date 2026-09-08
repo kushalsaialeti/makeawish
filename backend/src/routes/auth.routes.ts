@@ -1,31 +1,32 @@
 import { Router } from 'express';
-import jwt from 'jsonwebtoken';
+import {
+  signup,
+  verifyOtp,
+  resendOtp,
+  login,
+  googleAuth,
+  getMe,
+  verifyAdminPasscode,
+  adminRequestOtp,
+  adminVerifyOtp,
+} from '../controllers/auth.controller';
+import { authMiddleware } from '../middlewares/auth.middleware';
 
 const router = Router();
 
-// Replace this with a proper secret in production
-const JWT_SECRET = process.env.JWT_SECRET || 'makeawish-super-secret-key-2026';
-const CORRECT_PIN = '12162005';
+// Public Authentication Endpoints
+router.post('/signup', signup);
+router.post('/verify-otp', verifyOtp);
+router.post('/resend-otp', resendOtp);
+router.post('/login', login);
+router.post('/google', googleAuth);
 
-router.post('/verify-pin', (req, res) => {
-  const { pin } = req.body;
-  
-  if (pin === CORRECT_PIN) {
-    const token = jwt.sign({ authenticated: true }, JWT_SECRET, { expiresIn: '24h' });
-    res.json({ success: true, token });
-  } else {
-    res.status(401).json({ success: false, message: 'Invalid PIN' });
-  }
-});
+// Admin Passcode & OTP Security Gate (Passcode 1622 + Admin Email Verification)
+router.post('/verify-admin-passcode', verifyAdminPasscode);
+router.post('/admin-request-otp', adminRequestOtp);
+router.post('/admin-verify-otp', adminVerifyOtp);
 
-router.post('/validate-token', (req, res) => {
-  const { token } = req.body;
-  try {
-    jwt.verify(token, JWT_SECRET);
-    res.json({ valid: true });
-  } catch (err) {
-    res.json({ valid: false });
-  }
-});
+// Protected Authentication Endpoints
+router.get('/me', authMiddleware, getMe);
 
 export default router;

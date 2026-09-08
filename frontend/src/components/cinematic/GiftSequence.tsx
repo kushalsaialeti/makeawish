@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCmsStore } from '../../store/cmsStore';
+import { Eyebrow, Handwritten } from '../ui/Typography';
 
 interface GiftSequenceProps {
   onComplete: () => void;
@@ -34,7 +35,6 @@ export const GiftSequence: React.FC<GiftSequenceProps> = ({ onComplete, initialS
 
   const handleOptionClick = (isCorrect: boolean) => {
     if (isSecondTry) {
-      // Any option in second try leads to happy reaction and then gift
       const nextSticker = getRandomSticker(true);
       setCurrentSticker(nextSticker);
       setIsShowingReaction(true);
@@ -48,14 +48,12 @@ export const GiftSequence: React.FC<GiftSequenceProps> = ({ onComplete, initialS
     }
 
     if (questionIndex === 0 && !isCorrect) {
-      // First question "No" click
       const nextSticker = getRandomSticker(false);
       setCurrentSticker(nextSticker);
       setIsShowingReaction(true);
       setTimeout(() => {
         setIsSecondTry(true);
         setIsShowingReaction(false);
-        // We stay on index 0 but the UI will show second try
       }, 1200);
       return;
     }
@@ -64,7 +62,6 @@ export const GiftSequence: React.FC<GiftSequenceProps> = ({ onComplete, initialS
     setCurrentSticker(nextSticker);
     setIsShowingReaction(true);
 
-    // Short delay to show the reaction sticker before moving on
     setTimeout(() => {
       if (questionIndex < giftSequence.questions.length - 1) {
         setQuestionIndex(prev => prev + 1);
@@ -80,98 +77,103 @@ export const GiftSequence: React.FC<GiftSequenceProps> = ({ onComplete, initialS
   };
 
   return (
-    <div className="fixed inset-0 z-[110] bg-[#1a1616] text-white flex flex-col items-center justify-center overflow-hidden font-sans">
+    <div className="fixed inset-0 z-[110] bg-[#151111] text-white flex flex-col items-center justify-center overflow-hidden font-sans">
       <AnimatePresence mode="wait">
         {step === 'questions' && (
           <motion.div
             key="questions"
-            initial={{ opacity: 0, scale: 0.8 }}
+            initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, x: -100 }}
-            className="flex flex-col items-center text-center p-6 w-full max-w-2xl relative"
+            exit={{ opacity: 0, x: -80 }}
+            className="flex flex-col items-center text-center p-4 sm:p-6 w-full max-w-2xl relative"
           >
             {/* Background Polaroids */}
             <motion.div 
-              initial={{ x: -100, rotate: -25, opacity: 0 }}
-              animate={{ x: 0, rotate: -15, opacity: 0.4 }}
-              className="absolute -top-20 -left-20 w-48 h-56 bg-white p-2 shadow-xl border border-gray-200 hidden md:block"
+              initial={{ x: -80, rotate: -20, opacity: 0 }}
+              animate={{ x: 0, rotate: -12, opacity: 0.35 }}
+              className="absolute -top-16 -left-16 w-44 h-52 bg-white p-2 shadow-2xl border border-white/20 hidden md:block rounded-sm"
             >
               {giftSequence.questionBgImageLeft && (
-                <img src={giftSequence.questionBgImageLeft} alt="bg" className="w-full h-40 object-cover" />
+                <img src={giftSequence.questionBgImageLeft} alt="bg" className="w-full h-36 object-cover" />
               )}
-              <div className="h-10" />
+              <div className="pt-2 text-center">
+                <Handwritten color="#5c381c" className="text-xs">sweet moments</Handwritten>
+              </div>
             </motion.div>
 
             <motion.div 
-              initial={{ x: 100, rotate: 25, opacity: 0 }}
-              animate={{ x: 0, rotate: 12, opacity: 0.4 }}
-              className="absolute -bottom-20 -right-20 w-48 h-56 bg-white p-2 shadow-xl border border-gray-200 hidden md:block"
+              initial={{ x: 80, rotate: 20, opacity: 0 }}
+              animate={{ x: 0, rotate: 10, opacity: 0.35 }}
+              className="absolute -bottom-16 -right-16 w-44 h-52 bg-white p-2 shadow-2xl border border-white/20 hidden md:block rounded-sm"
             >
               {giftSequence.questionBgImageRight && (
-                <img src={giftSequence.questionBgImageRight} alt="bg" className="w-full h-40 object-cover" />
+                <img src={giftSequence.questionBgImageRight} alt="bg" className="w-full h-36 object-cover" />
               )}
-              <div className="h-10" />
+              <div className="pt-2 text-center">
+                <Handwritten color="#5c381c" className="text-xs">unforgettable</Handwritten>
+              </div>
             </motion.div>
 
-            <div className={`bg-white rounded-[2rem] p-8 md:p-12 shadow-2xl flex flex-col items-center relative border-8 border-pink-100 z-10 ${questionIndex === 0 ? 'scale-110 md:scale-125' : ''}`}>
+            <div className="bg-[#241f1f] rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-8 md:p-12 shadow-2xl flex flex-col items-center relative border border-white/10 z-10 w-full max-w-md mx-auto">
               {currentSticker && (
                 <motion.div
                   key={currentSticker}
-                  initial={{ scale: 0.5, rotate: -20, opacity: 0 }}
-                  animate={{ scale: 1, rotate: 0, opacity: 1 }}
-                  transition={{ type: 'spring', damping: 10 }}
-                  className="mb-8"
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 mb-4 sm:mb-6 flex items-center justify-center"
                 >
-                  <img 
-                    src={currentSticker} 
-                    alt="sticker" 
-                    className={`${questionIndex === 0 ? 'w-56 h-56 md:w-80 md:h-80' : 'w-40 h-40 md:w-56 md:h-56'} object-contain`}
-                  />
+                  <img src={currentSticker} alt="sticker" className="w-full h-full object-contain drop-shadow-xl" />
                 </motion.div>
               )}
-              
+
               <AnimatePresence mode="wait">
-                {!isShowingReaction && (
+                {isShowingReaction ? (
                   <motion.div
-                    key={isSecondTry ? 'second-try' : `q-${questionIndex}`}
+                    key="reaction"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="flex flex-col items-center"
+                    className="min-h-[120px] sm:min-h-[140px] flex items-center justify-center"
                   >
-                    <h2 className="text-2xl md:text-3xl font-black text-gray-800 mb-10 tracking-tight leading-tight">
-                      {isSecondTry ? 'Do you want to see now?' : giftSequence.questions[questionIndex].question}
+                    <p className="font-display italic text-xl sm:text-2xl md:text-3xl text-pink-300">
+                      Processing magic... ✨
+                    </p>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="question"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="flex flex-col items-center w-full"
+                  >
+                    <Eyebrow accent className="mb-2">QUESTION 0{questionIndex + 1}</Eyebrow>
+
+                    <h2 className="font-display italic text-xl sm:text-2xl md:text-3xl text-[#f5f1e8] text-center mb-6 sm:mb-8 leading-snug">
+                      {isSecondTry ? "Are you sure? Think again..." : giftSequence.questions[questionIndex]?.question}
                     </h2>
 
-                    <div className="flex flex-wrap justify-center gap-6 w-full">
+                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full justify-center">
                       {isSecondTry ? (
-                        <>
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => handleOptionClick(true)}
-                            className="px-10 py-4 rounded-full font-black text-lg md:text-xl transition-all shadow-[0_8px_0_rgba(0,0,0,0.1)] active:shadow-none active:translate-y-1 bg-[#ff85a1] text-white"
-                          >
-                            Yes!
-                          </motion.button>
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => handleOptionClick(true)}
-                            className="px-10 py-4 rounded-full font-black text-lg md:text-xl transition-all shadow-[0_8px_0_rgba(0,0,0,0.1)] active:shadow-none active:translate-y-1 bg-[#3a86ff] text-white"
-                          >
-                            Double Yes!
-                          </motion.button>
-                        </>
+                        <motion.button
+                          whileHover={{ scale: 1.04 }}
+                          whileTap={{ scale: 0.96 }}
+                          onClick={() => handleOptionClick(true)}
+                          className="w-full px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl font-body font-black text-xs md:text-sm uppercase tracking-[0.16em] bg-gradient-to-r from-pink-600 via-rose-600 to-amber-600 text-white shadow-xl"
+                        >
+                          YES, ALWAYS! 💖
+                        </motion.button>
                       ) : (
-                        giftSequence.questions[questionIndex].options.map((opt, i) => (
+                        giftSequence.questions[questionIndex]?.options.map((opt, i) => (
                           <motion.button
                             key={i}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
+                            whileHover={{ scale: 1.04 }}
+                            whileTap={{ scale: 0.96 }}
                             onClick={() => handleOptionClick(opt.isCorrect)}
-                            className={`px-10 py-4 rounded-full font-black text-lg md:text-xl transition-all shadow-[0_8px_0_rgba(0,0,0,0.1)] active:shadow-none active:translate-y-1 ${
-                              i === 0 ? 'bg-[#ff85a1] text-white' : 'bg-[#3a86ff] text-white'
+                            className={`w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl font-body font-black text-xs md:text-sm uppercase tracking-[0.16em] transition-all shadow-lg ${
+                              i === 0 
+                                ? 'bg-gradient-to-r from-pink-600 to-rose-600 text-white' 
+                                : 'bg-white/10 hover:bg-white/20 text-white border border-white/10'
                             }`}
                           >
                             {opt.text}
@@ -189,31 +191,31 @@ export const GiftSequence: React.FC<GiftSequenceProps> = ({ onComplete, initialS
         {step === 'gift' && (
           <motion.div
             key="gift"
-            initial={{ opacity: 0, rotateY: -90 }}
-            animate={{ opacity: 1, rotateY: 0 }}
-            exit={{ opacity: 0, rotateY: 90 }}
-            transition={{ duration: 0.8, ease: "circOut" }}
-            className="relative w-full h-full flex items-center justify-center bg-black"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.05 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="relative w-full h-full flex items-center justify-center bg-[#151111]"
           >
             {/* Step Navigation */}
-            <div className="absolute top-8 left-8 z-[130]">
+            <div className="absolute top-4 left-4 sm:top-8 sm:left-8 z-[130]">
               <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
+                whileHover={{ scale: 1.06 }}
+                whileTap={{ scale: 0.94 }}
                 onClick={() => setStep('questions')}
-                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full backdrop-blur-md text-white/80 transition-colors border border-white/20"
+                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 sm:px-5 py-2 sm:py-2.5 rounded-2xl backdrop-blur-xl text-white/80 transition-all border border-white/15"
               >
                 <span>←</span>
-                <span className="text-sm font-bold uppercase tracking-wider">Back</span>
+                <span className="text-xs font-body font-bold uppercase tracking-[0.16em]">Back</span>
               </motion.button>
             </div>
 
             {giftSequence.giftType === 'video' ? (
-              <div className="relative w-full h-full flex flex-col items-center justify-center p-4">
-                <div className="relative w-full max-w-4xl aspect-video rounded-3xl overflow-hidden shadow-[0_0_100px_rgba(255,133,161,0.3)] bg-zinc-900 border-4 border-white/10">
+              <div className="relative w-full h-full flex flex-col items-center justify-center p-3 sm:p-4">
+                <div className="relative w-full max-w-4xl aspect-video rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_0_100px_rgba(255,133,161,0.25)] bg-zinc-950 border border-white/15">
                   <video 
                     ref={videoRef}
-                    src={giftSequence.giftUrl}
+                    src={giftSequence.giftUrl} 
                     autoPlay
                     controls
                     playsInline
@@ -227,35 +229,35 @@ export const GiftSequence: React.FC<GiftSequenceProps> = ({ onComplete, initialS
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     onClick={() => setStep('letter')}
-                    className="mt-8 flex flex-col items-center cursor-pointer group"
+                    className="mt-6 sm:mt-8 flex flex-col items-center cursor-pointer group"
                   >
                     {giftSequence.giftAlertSticker && (
                       <motion.img 
-                        animate={{ y: [0, -10, 0] }}
-                        transition={{ repeat: Infinity, duration: 1.5 }}
+                        animate={{ y: [0, -8, 0] }}
+                        transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
                         src={giftSequence.giftAlertSticker} 
                         alt="sticker" 
-                        className="w-24 h-24 mb-4 drop-shadow-lg"
+                        className="w-20 h-20 sm:w-24 sm:h-24 mb-3 sm:mb-4 drop-shadow-xl"
                       />
                     )}
-                    <h3 className="text-2xl font-black text-white text-center group-hover:text-pink-400 transition-colors">
-                      Click here for a surprise! ✨
+                    <h3 className="font-display italic text-xl sm:text-2xl md:text-3xl text-white text-center group-hover:text-pink-300 transition-colors">
+                      Click here for your love letter ✨
                     </h3>
                   </motion.div>
                 )}
               </div>
             ) : (
-              <div className="relative w-full h-full flex flex-col items-center justify-center p-4">
+              <div className="relative w-full h-full flex flex-col items-center justify-center p-3 sm:p-4">
                 <motion.div
                   initial={{ scale: 0.9, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  className="max-w-full max-h-[80vh] rounded-[2rem] overflow-hidden shadow-[0_0_100px_rgba(58,134,255,0.3)] border-8 border-white p-2 bg-white"
+                  className="max-w-full max-h-[75vh] sm:max-h-[80vh] rounded-2xl sm:rounded-[2.5rem] overflow-hidden shadow-[0_0_100px_rgba(255,133,161,0.25)] border-2 sm:border-4 border-white/20 p-2 bg-white/5"
                 >
                   {giftSequence.giftUrl && (
                     <img 
                       src={giftSequence.giftUrl} 
                       alt="gift" 
-                      className="max-w-full max-h-[75vh] rounded-2xl object-cover"
+                      className="max-w-full max-h-[70vh] sm:max-h-[75vh] rounded-xl sm:rounded-2xl object-cover"
                     />
                   )}
                 </motion.div>
@@ -263,23 +265,23 @@ export const GiftSequence: React.FC<GiftSequenceProps> = ({ onComplete, initialS
                 <AnimatePresence>
                   {showPhotoAlert && (
                     <motion.div
-                      initial={{ scale: 0, opacity: 0 }}
+                      initial={{ scale: 0.9, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
-                      className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-50 p-6"
+                      className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-md z-50 p-4 sm:p-6"
                     >
                       <motion.div 
-                        className="bg-white rounded-[3rem] p-10 flex flex-col items-center shadow-2xl max-w-sm border-8 border-blue-100"
+                        className="bg-[#241f1f] rounded-2xl sm:rounded-[2.5rem] p-6 sm:p-10 flex flex-col items-center shadow-2xl max-w-sm border border-white/15 text-center"
                         whileHover={{ scale: 1.02 }}
                       >
-                        <img src={giftSequence.giftAlertSticker} alt="sticker" className="w-40 h-40 mb-6" />
-                        <h3 className="text-2xl font-black text-gray-800 text-center mb-8">
+                        <img src={giftSequence.giftAlertSticker} alt="sticker" className="w-28 h-28 sm:w-36 sm:h-36 mb-4 sm:mb-6 drop-shadow-xl" />
+                        <h3 className="font-display italic text-xl sm:text-2xl text-[#f5f1e8] mb-6 leading-snug">
                           Something special is waiting for you! 🎁
                         </h3>
                         <button
                           onClick={() => setStep('letter')}
-                          className="px-10 py-4 bg-[#3a86ff] text-white rounded-full font-black text-xl shadow-lg hover:bg-blue-600 transition-all active:scale-95"
+                          className="w-full sm:w-auto px-8 py-3.5 sm:py-4 bg-gradient-to-r from-pink-600 via-rose-600 to-amber-600 text-white rounded-2xl font-body font-black text-xs uppercase tracking-[0.16em] shadow-xl hover:opacity-90 transition-all active:scale-95"
                         >
-                          See Surprise ✨
+                          Read Letter ✨
                         </button>
                       </motion.div>
                     </motion.div>
@@ -293,52 +295,48 @@ export const GiftSequence: React.FC<GiftSequenceProps> = ({ onComplete, initialS
         {step === 'letter' && (
           <motion.div
             key="letter"
-            initial={{ opacity: 0, rotateY: -90, scale: 0.5 }}
-            animate={{ opacity: 1, rotateY: 0, scale: 1 }}
-            transition={{ duration: 1, type: 'spring', damping: 15 }}
-            className="w-full h-full flex flex-col items-center justify-start bg-[#1a1616] p-4 overflow-y-auto"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8 }}
+            className="w-full h-full flex flex-col items-center justify-start bg-[#151111] p-3 sm:p-4 overflow-y-auto"
           >
-            {/* Back to Gift Button - Moved to fixed for mobile */}
-            <div className="fixed top-6 left-6 md:top-8 md:left-8 z-[140]">
+            {/* Back to Gift Button */}
+            <div className="fixed top-4 left-4 sm:top-6 sm:left-6 md:top-8 md:left-8 z-[140]">
               <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
+                whileHover={{ scale: 1.06 }}
+                whileTap={{ scale: 0.94 }}
                 onClick={() => setStep('gift')}
-                className="flex items-center gap-2 bg-black/40 hover:bg-black/60 px-4 py-2 rounded-full backdrop-blur-md text-white transition-colors border border-white/20 shadow-xl"
+                className="flex items-center gap-2 bg-black/60 hover:bg-black/80 px-4 sm:px-5 py-2 sm:py-2.5 rounded-2xl backdrop-blur-xl text-white transition-all border border-white/15 shadow-xl"
               >
                 <span>←</span>
-                <span className="text-[10px] md:text-sm font-bold uppercase tracking-wider">Back</span>
+                <span className="text-xs font-body font-bold uppercase tracking-[0.16em]">Back</span>
               </motion.button>
             </div>
 
-            <div className="max-w-2xl w-full perspective-1000 mt-20 mb-8">
+            <div className="max-w-2xl w-full mt-16 sm:mt-20 mb-10 sm:mb-12 px-1 sm:px-0">
               <motion.div 
-                className="bg-[#fdfaf3] p-8 md:p-16 shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative overflow-hidden min-h-[80vh] flex flex-col"
+                className="bg-[#faf5ea] p-6 sm:p-10 md:p-16 shadow-[0_25px_60px_rgba(0,0,0,0.7)] relative overflow-hidden min-h-[70vh] sm:min-h-[75vh] flex flex-col rounded-2xl sm:rounded-[2rem] border border-[#d4c8a8]"
                 style={{ 
-                  backgroundImage: "url('https://www.transparenttextures.com/patterns/old-paper.png')",
-                  borderRadius: "2px 4px 3px 6px"
+                  backgroundImage: "url('https://www.transparenttextures.com/patterns/old-paper.png')"
                 }}
               >
-                {/* Burnt Edges Effect */}
-                <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_60px_rgba(74,48,22,0.4)] border-2 border-[#d4c8a8]" />
-                <div className="absolute top-0 left-0 w-full h-4 bg-gradient-to-b from-[#4a3016]/20 to-transparent" />
-                <div className="absolute bottom-0 left-0 w-full h-4 bg-gradient-to-t from-[#4a3016]/20 to-transparent" />
-                
-                {/* Random paper "burn" spots */}
-                <div className="absolute top-[10%] left-[5%] w-12 h-8 bg-[#4a3016]/10 rounded-full blur-xl" />
-                <div className="absolute bottom-[15%] right-[8%] w-16 h-10 bg-[#4a3016]/15 rounded-full blur-xl" />
+                {/* Vintage Vignette */}
+                <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_50px_rgba(74,48,22,0.2)] rounded-2xl sm:rounded-[2rem]" />
 
                 <div className="relative z-10 flex flex-col h-full">
-                  <h1 className="text-3xl md:text-6xl text-[#2d1e11] font-bold mb-8 md:mb-12 text-center" style={{ fontFamily: "'Dancing Script', cursive" }}>
-                    {giftSequence.letterTitle}
-                  </h1>
+                  <div className="text-center mb-6 sm:mb-8">
+                    <Eyebrow className="!text-[#8a6b4f] mb-2">A SPECIAL DEDICATION</Eyebrow>
+                    <h1 className="font-display italic text-2xl sm:text-3xl md:text-5xl text-[#2d1e11] font-normal leading-tight">
+                      {giftSequence.letterTitle}
+                    </h1>
+                  </div>
                   
-                  <div className="text-lg md:text-2xl text-[#3d2b1a] space-y-6 md:space-y-8 whitespace-pre-wrap leading-[1.6] flex-grow" style={{ fontFamily: "'Dancing Script', cursive" }}>
+                  <div className="font-handwriting text-lg sm:text-2xl md:text-3xl text-[#2c1f14] space-y-4 sm:space-y-6 md:space-y-8 whitespace-pre-wrap leading-[1.65] flex-grow px-1 sm:px-2 font-medium">
                     {giftSequence.letterBody}
                   </div>
                   
-                  <div className="mt-16 text-right pt-8 border-t border-[#4a3016]/10">
-                    <p className="text-2xl md:text-3xl font-bold text-[#2d1e11]" style={{ fontFamily: "'Dancing Script', cursive" }}>
+                  <div className="mt-10 sm:mt-14 text-right pt-6 border-t border-[#8a6b4f]/20">
+                    <p className="font-handwriting text-xl sm:text-3xl md:text-4xl text-[#2d1e11] font-bold">
                       {giftSequence.letterFooter}
                     </p>
                   </div>
@@ -346,11 +344,11 @@ export const GiftSequence: React.FC<GiftSequenceProps> = ({ onComplete, initialS
                   <motion.button
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 1.5 }}
+                    transition={{ delay: 1 }}
                     onClick={onComplete}
-                    className="mt-16 w-full py-5 bg-[#2d1e11] text-[#fdfaf3] rounded-xl font-black text-xl hover:bg-black transition-all shadow-xl active:scale-95"
+                    className="mt-8 sm:mt-12 w-full py-3.5 sm:py-4 bg-[#2d1e11] hover:bg-black text-[#faf5ea] rounded-2xl font-body font-black text-xs md:text-sm uppercase tracking-[0.2em] transition-all shadow-xl active:scale-95"
                   >
-                    {giftSequence.ctaText}
+                    {giftSequence.ctaText} ✨
                   </motion.button>
                 </div>
               </motion.div>
@@ -358,12 +356,6 @@ export const GiftSequence: React.FC<GiftSequenceProps> = ({ onComplete, initialS
           </motion.div>
         )}
       </AnimatePresence>
-
-      <style>{`
-        .perspective-1000 {
-          perspective: 1000px;
-        }
-      `}</style>
     </div>
   );
 };

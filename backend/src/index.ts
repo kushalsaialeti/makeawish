@@ -57,5 +57,6 @@ app.get('/', (req: Request, res: Response) => {
 
 // Start Server
 app.listen(port, () => {
-  console.log(`Server is running at http://localhost:${port}`);
+  console.log(`[MakeAWish] Server running at http://localhost:${port}`);
 });
+

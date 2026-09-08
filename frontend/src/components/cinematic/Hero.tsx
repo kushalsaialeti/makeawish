@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { cinematicReveal, fadeUp, staggerContainer } from '../motion/variants';
+import { Eyebrow, DisplayBackground } from '../ui/Typography';
 
 interface HeroProps {
   title: string;
@@ -11,48 +12,42 @@ interface HeroProps {
 
 export const Hero: React.FC<HeroProps> = ({ title, subtitle, imageUrl, backgroundText }) => {
   return (
-    <section className="relative w-full h-screen flex items-center justify-center overflow-hidden bg-background">
+    <section className="relative w-full min-h-screen flex items-center justify-center overflow-hidden bg-[#151111] font-sans py-24">
       {/* Giant faded background typography */}
-      <motion.div 
-        className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 0.05, scale: 1 }}
-        transition={{ duration: 2, ease: "easeOut" }}
-      >
-        <h1 className="text-[20vw] font-bold text-foreground whitespace-nowrap tracking-tighter mix-blend-overlay">
-          {backgroundText}
-        </h1>
-      </motion.div>
+      <DisplayBackground text={backgroundText} className="opacity-40" />
 
       {/* Main cinematic image and content */}
       <motion.div 
-        className="relative z-10 container mx-auto px-4 flex flex-col items-center text-center"
+        className="relative z-10 container mx-auto px-6 flex flex-col items-center text-center"
         variants={staggerContainer}
         initial="hidden"
         animate="visible"
       >
         <motion.div 
-          className="relative w-full max-w-4xl aspect-[21/9] md:aspect-[16/9] rounded-2xl overflow-hidden shadow-2xl mb-12"
+          className="relative w-full max-w-4xl aspect-[21/9] md:aspect-[16/9] rounded-[2.5rem] overflow-hidden shadow-2xl mb-12 border border-white/10"
           variants={cinematicReveal}
         >
-          {/* Subtle gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent z-10" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#151111]/80 via-transparent to-transparent z-10" />
           <img 
             src={imageUrl} 
             alt="Hero Cinematic" 
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover filter contrast-110"
           />
         </motion.div>
 
-        <motion.h2 
-          className="text-4xl md:text-6xl lg:text-7xl font-serif text-foreground mb-6"
+        <motion.div variants={fadeUp} className="mb-3">
+          <Eyebrow accent>CHAPTER 01 • PROLOGUE</Eyebrow>
+        </motion.div>
+
+        <motion.h1 
+          className="font-display italic text-display-lg text-[#f5f1e8] mb-6 max-w-3xl leading-tight"
           variants={fadeUp}
         >
           {title}
-        </motion.h2>
+        </motion.h1>
 
         <motion.p 
-          className="text-lg md:text-xl text-muted-foreground max-w-2xl font-light"
+          className="font-body text-base md:text-lg text-white/70 max-w-xl leading-relaxed"
           variants={fadeUp}
         >
           {subtitle}

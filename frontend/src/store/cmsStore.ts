@@ -194,6 +194,58 @@ const defaultMemories: MemoriesContent = {
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
+const normalizeClientContent = (content: any) => {
+  if (!content || typeof content !== 'object') return {};
+  const c = { ...content };
+
+  // Normalize Coverflow Gallery
+  let cg = c.coverflowGallery || {};
+  if (!Array.isArray(cg.images) || cg.images.length === 0) {
+    const extracted = [
+      cg.image1,
+      cg.image2,
+      cg.image3,
+      cg.image4,
+      cg.image5,
+      cg.image6,
+      cg.image7,
+      cg.image8,
+    ].filter(Boolean);
+    if (extracted.length > 0) {
+      cg = { ...cg, images: extracted };
+    }
+  }
+  c.coverflowGallery = cg;
+
+  // Normalize Zine Split Showcase
+  let zs = c.zineSplitShowcase || {};
+  if (!Array.isArray(zs.items) || zs.items.length === 0) {
+    const extractedItems: ZineSplitItem[] = [];
+    for (let i = 1; i <= 6; i++) {
+      if (zs[`image${i}`] || zs[`backText${i}`] || zs[`desc${i}`]) {
+        extractedItems.push({
+          image: zs[`image${i}`] || '',
+          backText: zs[`backText${i}`] || '',
+          desc: zs[`desc${i}`] || '',
+        });
+      }
+    }
+    if (extractedItems.length > 0) {
+      zs = { ...zs, items: extractedItems };
+    }
+  }
+  c.zineSplitShowcase = zs;
+
+  // Normalize Memories
+  let mem = c.memories || {};
+  if (mem.tvVideoUrl && (!mem.tvVideoUrls || mem.tvVideoUrls.length === 0)) {
+    mem = { ...mem, tvVideoUrls: [mem.tvVideoUrl] };
+  }
+  c.memories = mem;
+
+  return c;
+};
+
 export const useCmsStore = create<CmsState>((set, get) => ({
   currentWishId: null,
   currentWishSlug: null,
@@ -216,17 +268,17 @@ export const useCmsStore = create<CmsState>((set, get) => ({
       if (!response.ok) throw new Error('Wish not found');
       const data: WishData = await response.json();
       
-      const content = data.content || {};
+      const content = normalizeClientContent(data.content || {});
       set({
         currentWishId: data.id,
         currentWishSlug: data.slug,
-        scrapbookHero: { ...defaultScrapbookHero, ...content.scrapbookHero },
-        splashScreen: { ...defaultSplashScreen, ...content.splashScreen },
-        zineSplitShowcase: { ...defaultZineSplitShowcase, ...content.zineSplitShowcase },
-        coverflowGallery: { ...defaultCoverflowGallery, ...content.coverflowGallery },
-        zineArchive: { ...defaultZineArchive, ...content.zineArchive },
-        giftSequence: { ...defaultGiftSequence, ...content.giftSequence },
-        memories: { ...defaultMemories, ...content.memories },
+        scrapbookHero: { ...defaultScrapbookHero, ...(content.scrapbookHero || {}) },
+        splashScreen: { ...defaultSplashScreen, ...(content.splashScreen || {}) },
+        zineSplitShowcase: { ...defaultZineSplitShowcase, ...(content.zineSplitShowcase || {}) },
+        coverflowGallery: { ...defaultCoverflowGallery, ...(content.coverflowGallery || {}) },
+        zineArchive: { ...defaultZineArchive, ...(content.zineArchive || {}) },
+        giftSequence: { ...defaultGiftSequence, ...(content.giftSequence || {}) },
+        memories: { ...defaultMemories, ...(content.memories || {}) },
         isPublished: data.is_published,
         isLoading: false
       });
@@ -238,29 +290,29 @@ export const useCmsStore = create<CmsState>((set, get) => ({
   fetchWishById: async (id: string) => {
     set({ isLoading: true, error: null });
     try {
-      const token = localStorage.getItem('admin_token');
+      const { useAuthStore } = await import('./authStore');
+      const token = useAuthStore.getState().getToken() || localStorage.getItem('admin_token') || sessionStorage.getItem('makeawish_admin_token') || '';
       const response = await fetch(`${API_URL}/api/cms/id/${id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.status === 401) {
-        localStorage.removeItem('admin_token');
-        window.location.reload();
+        window.location.href = '/login';
         return;
       }
       if (!response.ok) throw new Error('Wish not found');
       const data: WishData = await response.json();
       
-      const content = data.content || {};
+      const content = normalizeClientContent(data.content || {});
       set({
         currentWishId: data.id,
         currentWishSlug: data.slug,
-        scrapbookHero: { ...defaultScrapbookHero, ...content.scrapbookHero },
-        splashScreen: { ...defaultSplashScreen, ...content.splashScreen },
-        zineSplitShowcase: { ...defaultZineSplitShowcase, ...content.zineSplitShowcase },
-        coverflowGallery: { ...defaultCoverflowGallery, ...content.coverflowGallery },
-        zineArchive: { ...defaultZineArchive, ...content.zineArchive },
-        giftSequence: { ...defaultGiftSequence, ...content.giftSequence },
-        memories: { ...defaultMemories, ...content.memories },
+        scrapbookHero: { ...defaultScrapbookHero, ...(content.scrapbookHero || {}) },
+        splashScreen: { ...defaultSplashScreen, ...(content.splashScreen || {}) },
+        zineSplitShowcase: { ...defaultZineSplitShowcase, ...(content.zineSplitShowcase || {}) },
+        coverflowGallery: { ...defaultCoverflowGallery, ...(content.coverflowGallery || {}) },
+        zineArchive: { ...defaultZineArchive, ...(content.zineArchive || {}) },
+        giftSequence: { ...defaultGiftSequence, ...(content.giftSequence || {}) },
+        memories: { ...defaultMemories, ...(content.memories || {}) },
         isPublished: data.is_published,
         isLoading: false
       });
@@ -271,7 +323,8 @@ export const useCmsStore = create<CmsState>((set, get) => ({
 
   createWish: async (slug, name) => {
     set({ isLoading: true });
-    const token = localStorage.getItem('admin_token');
+    const { useAuthStore } = await import('./authStore');
+    const token = useAuthStore.getState().getToken() || localStorage.getItem('admin_token') || sessionStorage.getItem('makeawish_admin_token') || '';
     const response = await fetch(`${API_URL}/api/cms`, {
       method: 'POST',
       headers: { 
@@ -281,8 +334,7 @@ export const useCmsStore = create<CmsState>((set, get) => ({
       body: JSON.stringify({ slug, recipient_name: name })
     });
     if (response.status === 401) {
-      localStorage.removeItem('admin_token');
-      window.location.reload();
+      window.location.href = '/login';
       return '';
     }
     const data = await response.json();
@@ -318,7 +370,8 @@ export const useCmsStore = create<CmsState>((set, get) => ({
       payload.content = updatedContent;
     }
 
-    const token = localStorage.getItem('admin_token');
+    const { useAuthStore } = await import('./authStore');
+    const token = useAuthStore.getState().getToken() || localStorage.getItem('admin_token') || '';
     const response = await fetch(`${API_URL}/api/cms/${id}`, {
       method: 'PUT',
       headers: { 

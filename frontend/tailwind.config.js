@@ -6,6 +6,29 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        display: ['"Instrument Serif"', 'Georgia', 'serif'],
+        serif: ['"Instrument Serif"', 'Georgia', 'serif'],
+        sans: ['"Manrope"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        body: ['"Manrope"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        handwriting: ['"Caveat"', 'cursive'],
+        caveat: ['"Caveat"', 'cursive'],
+      },
+      letterSpacing: {
+        'tighter-editorial': '-0.055em',
+        'tight-display': '-0.035em',
+        'snug-heading': '-0.02em',
+        'wide-label': '0.12em',
+        'wider-eyebrow': '0.16em',
+        'widest-cinematic': '0.24em',
+      },
+      lineHeight: {
+        'hero': '0.86',
+        'display': '0.92',
+        'heading': '1.05',
+        'quote': '1.15',
+        'body': '1.62',
+      },
       colors: {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",

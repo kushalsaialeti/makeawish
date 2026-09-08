@@ -9,10 +9,17 @@ import { ZineSplitShowcase } from './components/cinematic/ZineSplitShowcase';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { SplashSequence } from './components/cinematic/SplashSequence';
 import { useCmsStore } from './store/cmsStore';
+import { useAuthStore } from './store/authStore';
 import { Memories } from './pages/Memories';
 import { GiftSequence } from './components/cinematic/GiftSequence';
 import { Navigation } from './components/Navigation';
 import { useKeepAlive } from './hooks/useKeepAlive';
+import { NotFound } from './pages/NotFound';
+import { Login } from './pages/Login';
+import { Signup } from './pages/Signup';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
+
+import { Eyebrow, Handwritten } from './components/ui/Typography';
 
 function WishView({ phase = 'unlock' }: { phase?: 'unlock' | 'prepare' | 'gift' | 'experience' }) {
   const { slug } = useParams<{ slug: string }>();
@@ -29,15 +36,19 @@ function WishView({ phase = 'unlock' }: { phase?: 'unlock' | 'prepare' | 'gift' 
   }, [slug, fetchWishBySlug, subscribeToWish]);
 
   if (isLoading) return (
-    <div className="min-h-screen bg-[#1c1917] flex items-center justify-center">
-      <div className="text-white font-serif italic text-2xl animate-pulse">Loading Magic...</div>
+    <div className="min-h-screen bg-[#151111] flex flex-col items-center justify-center gap-3">
+      <Eyebrow accent>PREPARING EXPERIENCE</Eyebrow>
+      <div className="font-display italic text-3xl md:text-4xl text-[#f5f1e8] animate-pulse">
+        Loading Magic...
+      </div>
     </div>
   );
 
   if (error || !scrapbookHero) return (
-    <div className="min-h-screen bg-[#1c1917] flex items-center justify-center">
-      <div className="text-white/40 font-serif italic text-xl">Wish not found or expired.</div>
-    </div>
+    <NotFound 
+      title="Wish Not Found" 
+      message="We couldn't find this magical birthday wish. It may have expired or the link might be misspelled." 
+    />
   );
 
   // If they are on /:slug with no phase, redirect to correct starting point
@@ -70,7 +81,7 @@ function Home({ slug }: { slug: string }) {
   return (
     <SmoothScroll>
       <Navigation />
-      <main className="min-h-screen bg-[#151111] text-[#e6d0d2] font-mono selection:bg-[#7a1022] selection:text-[#f3d3d3]">
+      <main className="min-h-screen bg-[#151111] text-[#e6d0d2] font-sans selection:bg-[#7a1022] selection:text-[#f3d3d3]">
         <div className="relative">
           <ScrapbookHero />
           <ZineSplitShowcase />
@@ -78,46 +89,62 @@ function Home({ slug }: { slug: string }) {
           <CoverflowGallery />
 
           {/* Revisit Section */}
-          <section className="py-20 px-6 md:px-16 text-center bg-gradient-to-b from-transparent to-[#1a1616]">
-            <h2 className="text-3xl font-black mb-12 uppercase tracking-[0.4em] text-white/40">Revisit the Magic</h2>
-            <div className="flex flex-wrap justify-center gap-8">
+          <section className="py-16 sm:py-24 px-4 sm:px-6 md:px-16 text-center bg-gradient-to-b from-transparent via-[#1a1515] to-[#151111] relative">
+            <div className="max-w-4xl mx-auto flex flex-col items-center mb-10 sm:mb-14">
+              <Eyebrow accent className="mb-3">A MOMENT TO REMEMBER</Eyebrow>
+              <h2 className="font-display italic text-display-md text-[#f5f1e8]">
+                Revisit the Magic
+              </h2>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-10">
               <motion.button
-                whileHover={{ scale: 1.05, rotate: -2 }}
+                whileHover={{ scale: 1.04, rotate: -2 }}
+                whileTap={{ scale: 0.96 }}
                 onClick={() => navigate(`/${slug}/gift`)}
-                className="group relative w-64 aspect-[4/5] bg-white p-4 pb-12 shadow-2xl rotate-[-2deg] transition-transform"
+                className="group relative w-56 sm:w-64 aspect-[4/5] bg-white p-3 pb-12 shadow-2xl rotate-[-2deg] transition-all rounded-sm"
               >
-                <div className="w-full h-full bg-gray-200 overflow-hidden relative">
-                   <div className="absolute inset-0 flex items-center justify-center bg-black/40 group-hover:bg-black/20 transition-colors">
-                      <span className="text-white font-black tracking-widest text-lg">WATCH AGAIN</span>
+                <div className="w-full h-full bg-gray-200 overflow-hidden relative rounded-sm">
+                   <div className="absolute inset-0 flex items-center justify-center bg-black/40 group-hover:bg-black/20 transition-colors z-10">
+                      <span className="text-white font-body font-black tracking-[0.2em] text-xs uppercase bg-black/60 px-4 py-2 rounded-lg backdrop-blur-sm">
+                        WATCH AGAIN
+                      </span>
                    </div>
                    <img src="https://images.unsplash.com/photo-1513151233558-d860c5398176?w=400" className="w-full h-full object-cover" alt="Video" />
                 </div>
-                <div className="absolute bottom-4 left-0 w-full font-serif italic text-gray-400">The Surprise</div>
+                <div className="absolute bottom-3 left-0 w-full text-center">
+                  <Handwritten color="#5c381c" className="text-sm">The Surprise Video</Handwritten>
+                </div>
               </motion.button>
 
               <motion.button
-                whileHover={{ scale: 1.05, rotate: 2 }}
+                whileHover={{ scale: 1.04, rotate: 2 }}
+                whileTap={{ scale: 0.96 }}
                 onClick={() => navigate(`/${slug}/gift`)}
-                className="group relative w-64 aspect-[4/5] bg-[#fdfaf3] p-4 pb-12 shadow-2xl rotate-[2deg] transition-transform"
+                className="group relative w-56 sm:w-64 aspect-[4/5] bg-[#faf6ee] p-4 pb-12 shadow-2xl rotate-[2deg] transition-all rounded-sm border border-[#e2dac8]"
               >
-                <div className="w-full h-full border border-amber-100 flex items-center justify-center p-4">
-                   <div className="absolute inset-0 flex items-center justify-center bg-amber-900/10 group-hover:bg-transparent transition-colors z-10" />
-                   <p className="text-amber-900/40 font-serif italic text-sm leading-relaxed text-center overflow-hidden h-full">
+                <div className="w-full h-full border border-amber-900/10 flex items-center justify-center p-4 relative rounded-sm paper-texture">
+                   <p className="text-[#3d2b1a]/50 font-handwriting text-base leading-relaxed text-center overflow-hidden h-full">
                       "I only want you to be happy, and I am wishing you all the happiness in the world on this special day. You mean everything to me..."
                    </p>
                    <div className="absolute inset-0 flex items-center justify-center z-20">
-                      <span className="text-amber-900 font-black tracking-widest text-lg bg-white/80 px-4 py-2">READ LETTER</span>
+                      <span className="text-[#2d1e11] font-body font-black tracking-[0.2em] text-xs uppercase bg-[#faf6ee]/90 px-4 py-2 rounded-lg shadow-md border border-[#d4c8a8]">
+                        READ LETTER
+                      </span>
                    </div>
                 </div>
-                <div className="absolute bottom-4 left-0 w-full font-serif italic text-amber-900/40">A Love Note</div>
+                <div className="absolute bottom-3 left-0 w-full text-center">
+                  <Handwritten color="#5c381c" className="text-sm">A Love Note</Handwritten>
+                </div>
               </motion.button>
             </div>
           </section>
         </div>
         
-        <footer className="bg-[#151111] w-full py-6 px-6 md:px-16 border-t border-white/10 text-center">
-          <p className="text-[#e6d0d2] font-serif italic text-lg opacity-80">
-            Wishing you the happiest of birthdays and a year filled with wonderful memories! ✨
+        <footer className="bg-[#151111] w-full py-10 sm:py-14 px-4 sm:px-6 md:px-16 border-t border-white/10 text-center flex flex-col items-center gap-3">
+          <Eyebrow>MAKE A WISH STORYBOOK</Eyebrow>
+          <p className="font-display italic text-xl md:text-2xl text-[#f5f1e8]/90 max-w-xl leading-relaxed">
+            Wishing you the happiest of birthdays and a year filled with wonderful memories. ✨
           </p>
         </footer>
       </main>
@@ -125,26 +152,86 @@ function Home({ slug }: { slug: string }) {
   );
 }
 
+import { AdminAuth } from './pages/AdminAuth';
+import { AdminConsole } from './pages/AdminConsole';
+
+function AdminRoute() {
+  const { isAdmin } = useAuthStore();
+  const savedAdminToken = sessionStorage.getItem('makeawish_admin_token');
+
+  if (isAdmin || savedAdminToken) {
+    return <AdminConsole />;
+  }
+
+  return <AdminAuth />;
+}
+
+function RootRoute() {
+  const { isAuthenticated, isLoading } = useAuthStore();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#151111] flex flex-col items-center justify-center gap-3">
+        <Eyebrow accent>STARTING CELEBRATION STUDIO</Eyebrow>
+        <div className="font-display italic text-3xl md:text-4xl text-[#f5f1e8] animate-pulse">
+          Loading Magic...
+        </div>
+      </div>
+    );
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/wishes" replace />;
+  }
+
+  return <Login />;
+}
+
 function App() {
   useKeepAlive();
+
+  useEffect(() => {
+    useAuthStore.getState().initialize();
+  }, []);
+
   return (
     <BrowserRouter>
         <Routes>
-          <Route path="/admin/*" element={<AdminDashboard />} />
+          {/* Main Launch Route: Login page / Auto-redirect to /wishes if authenticated */}
+          <Route path="/" element={<RootRoute />} />
+
+          {/* Authentication Routes for Normal Users */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+
+          {/* Secret Super Admin Route (Passcode 1622 + Admin OTP Verification) */}
+          <Route path="/admin-1622/*" element={<AdminRoute />} />
+          <Route path="/admin-1622" element={<AdminRoute />} />
+          <Route path="/admin" element={<Navigate to="/admin-1622" replace />} />
+          <Route path="/admin/*" element={<Navigate to="/admin-1622" replace />} />
+
+          {/* Protected Creator Studio Routes for Normal Users */}
+          <Route path="/wishes/*" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+          <Route path="/dashboard/*" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
           
-          {/* User Wish Experience Phases - Ordered by flow */}
+          {/* Public Recipient Experience Phases - Publicly viewable without login */}
           <Route path="/:slug/unlock" element={<WishView phase="unlock" />} />
           <Route path="/:slug/prepare" element={<WishView phase="prepare" />} />
           <Route path="/:slug/gift" element={<WishView phase="gift" />} />
           <Route path="/:slug/experience" element={<WishView phase="experience" />} />
           <Route path="/:slug/memories" element={<SmoothScroll><Memories /></SmoothScroll>} />
           <Route path="/:slug" element={<WishView />} />
+
           {/* Compatibility routes */}
           <Route path="/wish/:slug" element={<Navigate to="/:slug" replace />} />
           <Route path="/wish/:slug/memories" element={<Navigate to="/:slug/memories" replace />} />
+
+          {/* 404 Catch-All Route */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
     </BrowserRouter>
   );
 }
 
 export default App;
+
