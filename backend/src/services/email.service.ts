@@ -25,10 +25,10 @@ export const sendVerificationOtpEmail = async (
   otpCode: string,
   recipientName: string = 'Dreamer'
 ): Promise<SendOtpResult> => {
-  console.log(`\n==================================================`);
-  console.log(`[MakeAWish Auth] OTP Code for ${recipientEmail}: [ ${otpCode} ]`);
-  console.log(`[MakeAWish Auth] Valid for 10 minutes.`);
-  console.log(`==================================================\n`);
+  // console.log(`\n==================================================`);
+  // console.log(`[MakeAWish Auth] OTP Code for ${recipientEmail}: [ ${otpCode} ]`);
+  // console.log(`[MakeAWish Auth] Valid for 10 minutes.`);
+  // console.log(`==================================================\n`);
 
   const resend = getResendClient();
 

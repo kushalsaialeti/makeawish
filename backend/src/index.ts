@@ -12,6 +12,7 @@ const port = process.env.PORT || 3001;
 import memoryRoutes from './routes/memory.routes';
 import cmsRoutes from './routes/cms.routes';
 import authRoutes from './routes/auth.routes';
+import { startSupabaseKeepAliveCron, pingSupabase } from './services/supabaseKeepAlive.service';
 
 // Middlewares
 app.use(cors({
@@ -45,10 +46,20 @@ cron.schedule('*/6 * * * *', async () => {
     console.error('[Cron] Frontend ping failed:', err);
   }
 });
+
+// Initialize Supabase 3-day keep-alive cron
+startSupabaseKeepAliveCron();
+
 // Routes
 app.use('/api/memories', memoryRoutes);
 app.use('/api/cms', cmsRoutes);
 app.use('/api/auth', authRoutes);
+
+// Supabase Health & Heartbeat Endpoint
+app.get('/api/health/supabase', async (req: Request, res: Response) => {
+  const result = await pingSupabase();
+  res.status(result.success ? 200 : 500).json(result);
+});
 
 // Basic Route
 app.get('/', (req: Request, res: Response) => {
