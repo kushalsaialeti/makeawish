@@ -2,27 +2,39 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCmsStore } from '../store/cmsStore';
 import { useAuthStore } from '../store/authStore';
-import { Routes, Route, useNavigate, useParams, useLocation } from 'react-router-dom';
+import { Routes, Route, useNavigate, useParams } from 'react-router-dom';
 import { Eyebrow } from '../components/ui/Typography';
-import { AdminPasscodeModal } from '../components/auth/AdminPasscodeModal';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+import { 
+  Sparkles, 
+  Cake, 
+  Heart, 
+  GraduationCap, 
+  Trophy, 
+  Wand2, 
+  Plus, 
+  ExternalLink, 
+  Link2, 
+  Trash2, 
+  LogOut, 
+  ArrowRight
+} from 'lucide-react';
+import { API_BASE } from '../config/api';
 
 export const OCCASIONS = [
-  { id: 'all', label: 'All Occasions', icon: '✨', bg: 'from-pink-500/20 to-rose-500/20', text: 'text-pink-300' },
-  { id: 'birthday', label: 'Birthday', icon: '🎂', bg: 'from-pink-500/20 to-rose-500/20', text: 'text-pink-300' },
-  { id: 'anniversary', label: 'Anniversary', icon: '💍', bg: 'from-rose-500/20 to-red-600/20', text: 'text-rose-300' },
-  { id: 'valentine', label: "Valentine's", icon: '💖', bg: 'from-red-500/20 to-pink-600/20', text: 'text-red-300' },
-  { id: 'graduation', label: 'Graduation', icon: '🎓', bg: 'from-amber-500/20 to-yellow-600/20', text: 'text-amber-300' },
-  { id: 'milestone', label: 'Milestone', icon: '🎉', bg: 'from-purple-500/20 to-indigo-600/20', text: 'text-purple-300' },
-  { id: 'custom', label: 'Custom Wish', icon: '💌', bg: 'from-emerald-500/20 to-teal-600/20', text: 'text-emerald-300' },
+  { id: 'all', label: 'All Occasions', icon: Sparkles, bg: 'from-pink-500/20 to-rose-500/20', text: 'text-pink-300' },
+  { id: 'birthday', label: 'Birthday', icon: Cake, bg: 'from-pink-500/20 to-rose-500/20', text: 'text-pink-300' },
+  { id: 'anniversary', label: 'Anniversary', icon: Heart, bg: 'from-rose-500/20 to-red-600/20', text: 'text-rose-300' },
+  { id: 'valentine', label: "Valentine's", icon: Heart, bg: 'from-red-500/20 to-pink-600/20', text: 'text-red-300' },
+  { id: 'graduation', label: 'Graduation', icon: GraduationCap, bg: 'from-amber-500/20 to-yellow-600/20', text: 'text-amber-300' },
+  { id: 'milestone', label: 'Milestone', icon: Trophy, bg: 'from-purple-500/20 to-indigo-600/20', text: 'text-purple-300' },
+  { id: 'custom', label: 'Custom Wish', icon: Wand2, bg: 'from-emerald-500/20 to-teal-600/20', text: 'text-emerald-300' },
 ];
 
 export const OCCASION_SHOWCASE = [
   {
     id: 'birthday',
     title: 'Birthday Celebration',
-    badge: '🎂 Birthday',
+    badge: 'Birthday',
     tagline: 'Cherish the moments that make them smile',
     description: 'Personalized splash countdown, nostalgic vintage polaroid stacks, and interactive surprise video reveals.',
     image: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?w=600&auto=format&fit=crop&q=80',
@@ -32,7 +44,7 @@ export const OCCASION_SHOWCASE = [
   {
     id: 'anniversary',
     title: 'Anniversary Romance',
-    badge: '💍 Anniversary',
+    badge: 'Anniversary',
     tagline: 'Celebrate timeless love & devotion',
     description: 'Romantic memory corridors, handwritten digital letters, and interactive relationship timeline stories.',
     image: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=600&auto=format&fit=crop&q=80',
@@ -42,7 +54,7 @@ export const OCCASION_SHOWCASE = [
   {
     id: 'valentine',
     title: "Valentine's Day",
-    badge: '💖 Valentine',
+    badge: "Valentine's",
     tagline: 'Words straight from your heart',
     description: 'Heartwarming animated particle fields, secret love vault unlocks, and tender audio-visual dedications.',
     image: 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=600&auto=format&fit=crop&q=80',
@@ -52,7 +64,7 @@ export const OCCASION_SHOWCASE = [
   {
     id: 'graduation',
     title: 'Graduation Triumph',
-    badge: '🎓 Graduation',
+    badge: 'Graduation',
     tagline: 'Honor dedication & future dreams',
     description: 'Inspiring journey archives, congratulatory notes, and celebratory milestone scrapbook galleries.',
     image: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=600&auto=format&fit=crop&q=80',
@@ -62,7 +74,7 @@ export const OCCASION_SHOWCASE = [
   {
     id: 'milestone',
     title: 'Milestone & Achievement',
-    badge: '🏆 Milestone',
+    badge: 'Milestone',
     tagline: 'Commemorate extraordinary chapters',
     description: 'Cinematic victory highlights, personal tribute letters, and customized celebratory rewards.',
     image: 'https://images.unsplash.com/photo-1531685250784-7569952593d2?w=600&auto=format&fit=crop&q=80',
@@ -72,7 +84,7 @@ export const OCCASION_SHOWCASE = [
   {
     id: 'custom',
     title: 'Custom Celebration',
-    badge: '✨ Custom',
+    badge: 'Custom',
     tagline: 'Craft personalized magic for any day',
     description: 'Full creative freedom to curate songs, photos, riddles, and memories for any special occasion.',
     image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=600&auto=format&fit=crop&q=80',
@@ -128,7 +140,7 @@ const SaveBtn: React.FC<{ onClick: () => void; isSaving?: boolean }> = ({ onClic
   </motion.button>
 );
 
-// --- MAIN ADMIN / WISHES ROUTER ---
+// --- MAIN WISHES ROUTER ---
 
 export const AdminDashboard = () => { 
   return (
@@ -151,37 +163,14 @@ const WishList = () => {
   const [confirmNameInput, setConfirmNameInput] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [showPasscodeModal, setShowPasscodeModal] = useState(false);
-  const [claimingWishId, setClaimingWishId] = useState<string | null>(null);
 
-  const { user, signOut, getToken, isAdmin, exitAdminMode, claimWish } = useAuthStore();
+  const { user, signOut, getToken } = useAuthStore();
   const navigate = useNavigate();
-  const location = useLocation();
-  const basePath = location.pathname.startsWith('/wishes')
-    ? '/wishes'
-    : location.pathname.startsWith('/dashboard')
-      ? '/dashboard'
-      : '/admin';
+  const basePath = '/wishes';
 
   useEffect(() => {
-    // If user navigates directly to /admin and is not admin verified, open passcode modal
-    if (location.pathname.startsWith('/admin') && !isAdmin) {
-      setShowPasscodeModal(true);
-    }
     fetchWishes();
-  }, [location.pathname, isAdmin]);
-
-  const handleClaim = async (wishId: string) => {
-    setClaimingWishId(wishId);
-    const res = await claimWish(wishId);
-    setClaimingWishId(null);
-    if (res.success) {
-      fetchWishes();
-      alert('Wish successfully linked to your account! 💝');
-    } else {
-      alert(`Error claiming wish: ${res.error}`);
-    }
-  };
+  }, []);
 
   const fetchWishes = async () => {
     try {
@@ -190,7 +179,7 @@ const WishList = () => {
         setIsLoading(false);
         return;
       }
-      const response = await fetch(`${API_URL}/api/cms`, {
+      const response = await fetch(`${API_BASE}/cms`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.status === 401) {
@@ -213,7 +202,7 @@ const WishList = () => {
     setIsLoading(true);
     try {
       const token = getToken();
-      const response = await fetch(`${API_URL}/api/cms`, {
+      const response = await fetch(`${API_BASE}/cms`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -248,7 +237,7 @@ const WishList = () => {
 
     try {
       const token = getToken();
-      const response = await fetch(`${API_URL}/api/cms/${wishToDelete.id}`, {
+      const response = await fetch(`${API_BASE}/cms/${wishToDelete.id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -278,7 +267,7 @@ const WishList = () => {
   return (
     <div className="min-h-screen bg-[#151111] text-[#e6d0d2] p-4 sm:p-8 md:p-16 font-sans">
       <div className="max-w-6xl mx-auto">
-        {/* Top User Bar */}
+        {/* Top User Profile Bar */}
         <div className="flex justify-between items-center pb-6 mb-8 border-b border-white/10">
           <div className="flex items-center gap-3">
             {user?.avatar ? (
@@ -297,64 +286,24 @@ const WishList = () => {
                 {user?.name || user?.email?.split('@')[0] || 'Celebration Storyteller'}
               </p>
               <p className="text-[11px] font-body text-white/40 tracking-wider">
-                {isAdmin ? 'Super Admin Mode Active' : user?.email || 'Authenticated Creator'}
+                {user?.email || 'Authenticated Creator'}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            {isAdmin && (
-              <span className="px-3 py-1.5 rounded-xl bg-red-500/20 border border-red-500/40 text-red-300 text-xs font-bold font-body uppercase tracking-wider flex items-center gap-1.5">
-                <span>🛡️ Super Admin</span>
-              </span>
-            )}
-
             <button
               onClick={async () => {
                 await signOut();
                 navigate('/login');
               }}
-              className="bg-white/5 hover:bg-white/10 text-white/70 hover:text-white px-4 py-2 rounded-xl text-xs font-body font-bold uppercase tracking-wider transition-all border border-white/10 cursor-pointer"
+              className="bg-white/5 hover:bg-white/10 text-white/70 hover:text-white px-4 py-2 rounded-xl text-xs font-body font-bold uppercase tracking-wider transition-all border border-white/10 cursor-pointer flex items-center gap-2"
             >
-              Sign Out
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Sign Out</span>
             </button>
           </div>
         </div>
-
-        {/* Super Admin Showcase Banner */}
-        {isAdmin && (
-          <div className="bg-gradient-to-r from-red-950/60 via-purple-950/40 to-pink-950/40 border border-red-500/40 rounded-3xl p-5 sm:p-6 mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-xl backdrop-blur-md">
-            <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-red-500/20 border border-red-500/40 flex items-center justify-center text-2xl shadow-[0_0_20px_rgba(244,63,94,0.3)]">
-                🛡️
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-body font-black uppercase tracking-[0.2em] text-red-400">
-                    SUPER ADMIN CONSOLE
-                  </span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 border border-red-500/30 uppercase">
-                    SHOWCASE MODE (ALL WISHES)
-                  </span>
-                </div>
-                <p className="text-xs text-white/60 font-body mt-0.5">
-                  Displaying all previous and current wishes from the database to showcase your celebration work.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  exitAdminMode();
-                  navigate('/wishes');
-                }}
-                className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl text-xs font-body font-bold uppercase tracking-wider transition-all cursor-pointer"
-              >
-                Exit Admin Mode
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 sm:mb-12">
@@ -369,9 +318,10 @@ const WishList = () => {
           </div>
           <button 
             onClick={() => setIsCreating(true)}
-            className="w-full md:w-auto bg-gradient-to-r from-pink-600 via-rose-600 to-amber-600 text-white px-8 py-4 rounded-2xl font-body font-black text-xs uppercase tracking-[0.18em] shadow-xl hover:opacity-90 transition-all active:scale-95 cursor-pointer"
+            className="w-full md:w-auto bg-gradient-to-r from-pink-600 via-rose-600 to-amber-600 text-white px-8 py-4 rounded-2xl font-body font-black text-xs uppercase tracking-[0.18em] shadow-xl hover:opacity-90 transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2"
           >
-            + Create New Story
+            <Plus className="w-4 h-4" />
+            <span>Create New Story</span>
           </button>
         </div>
 
@@ -396,21 +346,24 @@ const WishList = () => {
                   Select Celebration Occasion
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-                  {OCCASIONS.filter(o => o.id !== 'all').map(occ => (
-                    <button
-                      key={occ.id}
-                      type="button"
-                      onClick={() => setNewWish({ ...newWish, occasion: occ.id })}
-                      className={`p-3 rounded-2xl border transition-all text-center flex flex-col items-center gap-1 cursor-pointer ${
-                        newWish.occasion === occ.id
-                          ? 'bg-gradient-to-b from-pink-500/20 to-rose-600/10 border-pink-500 text-white shadow-lg'
-                          : 'bg-black/30 border-white/10 text-white/50 hover:text-white hover:border-white/20'
-                      }`}
-                    >
-                      <span className="text-2xl mb-0.5">{occ.icon}</span>
-                      <span className="text-xs font-body font-bold">{occ.label}</span>
-                    </button>
-                  ))}
+                  {OCCASIONS.filter(o => o.id !== 'all').map(occ => {
+                    const OccIcon = occ.icon;
+                    return (
+                      <button
+                        key={occ.id}
+                        type="button"
+                        onClick={() => setNewWish({ ...newWish, occasion: occ.id })}
+                        className={`p-3 rounded-2xl border transition-all text-center flex flex-col items-center gap-1 cursor-pointer ${
+                          newWish.occasion === occ.id
+                            ? 'bg-gradient-to-b from-pink-500/20 to-rose-600/10 border-pink-500 text-white shadow-lg'
+                            : 'bg-black/30 border-white/10 text-white/50 hover:text-white hover:border-white/20'
+                        }`}
+                      >
+                        <OccIcon className="w-5 h-5 mb-0.5 text-pink-400" />
+                        <span className="text-xs font-body font-bold">{occ.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -438,8 +391,9 @@ const WishList = () => {
               </div>
               
               <div className="flex flex-col sm:flex-row gap-4 pt-2">
-                <button type="submit" className="bg-gradient-to-r from-pink-600 to-rose-600 text-white px-8 py-3.5 rounded-xl font-body font-black text-xs uppercase tracking-[0.18em] shadow-lg hover:opacity-90 transition-all cursor-pointer">
-                  Generate Template ✨
+                <button type="submit" className="bg-gradient-to-r from-pink-600 to-rose-600 text-white px-8 py-3.5 rounded-xl font-body font-black text-xs uppercase tracking-[0.18em] shadow-lg hover:opacity-90 transition-all cursor-pointer flex items-center justify-center gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  <span>Generate Template</span>
                 </button>
                 <button type="button" onClick={() => setIsCreating(false)} className="bg-white/5 hover:bg-white/10 text-white/70 px-6 py-3.5 rounded-xl font-body font-bold text-xs uppercase tracking-[0.16em] transition-all cursor-pointer">
                   Cancel
@@ -467,7 +421,7 @@ const WishList = () => {
               
               <div className="relative z-10 max-w-2xl mx-auto flex flex-col items-center">
                 <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-br from-pink-500/20 to-rose-600/10 border border-pink-500/30 flex items-center justify-center text-3xl sm:text-4xl shadow-[0_0_30px_rgba(244,63,94,0.25)] mb-6">
-                  ✨
+                  <Sparkles className="w-8 h-8 text-pink-400" />
                 </div>
 
                 <Eyebrow accent className="mb-2">BEGIN A JOURNEY OF UNFORGETTABLE MOMENTS</Eyebrow>
@@ -485,8 +439,9 @@ const WishList = () => {
                   onClick={() => setIsCreating(true)}
                   className="bg-gradient-to-r from-pink-600 via-rose-600 to-amber-600 text-white px-8 sm:px-10 py-4 sm:py-5 rounded-2xl font-body font-black text-xs sm:text-sm uppercase tracking-[0.2em] shadow-2xl hover:shadow-[0_0_30px_rgba(244,63,94,0.4)] transition-all cursor-pointer flex items-center gap-3 group"
                 >
-                  <span>✨ Create a Wish for an Occasion</span>
-                  <span className="group-hover:translate-x-1 transition-transform">→</span>
+                  <Sparkles className="w-4 h-4" />
+                  <span>Create a Wish for an Occasion</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </motion.button>
               </div>
             </motion.div>
@@ -496,7 +451,7 @@ const WishList = () => {
               <div className="text-center mb-6">
                 <Eyebrow className="text-white/40">EXPLORE CELEBRATION OCCASIONS</Eyebrow>
                 <h3 className="font-display italic text-2xl sm:text-3xl text-white mt-1">
-                  Choose a Story for Any Special Day
+                  Tailored Templates for Every Special Milestone
                 </h3>
               </div>
 
@@ -549,7 +504,7 @@ const WishList = () => {
                         className="w-full py-3 px-4 rounded-xl bg-white/5 hover:bg-pink-600/20 text-white/80 hover:text-white border border-white/10 hover:border-pink-500/40 font-body font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer group-hover:shadow-lg"
                       >
                         <span>Start {item.badge} Story</span>
-                        <span>→</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </motion.div>
@@ -561,6 +516,7 @@ const WishList = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredWishes.map((wish) => {
               const occInfo = getOccasionInfo(wish.occasion);
+              const OccIcon = occInfo.icon;
               return (
                 <motion.div 
                   key={wish.id}
@@ -569,8 +525,8 @@ const WishList = () => {
                 >
                   <div>
                     <div className="flex justify-between items-start mb-5">
-                      <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-2xl">
-                        {occInfo.icon}
+                      <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                        <OccIcon className="w-6 h-6 text-pink-400" />
                       </div>
                       
                       <div className="flex items-center gap-2">
@@ -599,17 +555,18 @@ const WishList = () => {
                     <div className="flex gap-3">
                       <button 
                         onClick={() => navigate(`${basePath}/edit/${wish.id}`)}
-                        className="flex-1 bg-white/10 hover:bg-white/20 py-3 rounded-xl text-xs font-body font-bold uppercase tracking-wider text-white transition-all text-center cursor-pointer"
+                        className="flex-1 bg-white/10 hover:bg-white/20 py-3 rounded-xl text-xs font-body font-bold uppercase tracking-wider text-white transition-all text-center cursor-pointer flex items-center justify-center gap-1.5"
                       >
-                        Edit Story
+                        <span>Edit Story</span>
                       </button>
                       <a 
                         href={`/${wish.slug}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 bg-white/5 hover:bg-white/10 text-white/80 py-3 rounded-xl text-xs font-body font-bold uppercase tracking-wider text-center transition-all"
+                        className="flex-1 bg-white/5 hover:bg-white/10 text-white/80 py-3 rounded-xl text-xs font-body font-bold uppercase tracking-wider text-center transition-all flex items-center justify-center gap-1"
                       >
-                        Preview ↗
+                        <span>Preview</span>
+                        <ExternalLink className="w-3 h-3" />
                       </a>
                     </div>
 
@@ -621,22 +578,11 @@ const WishList = () => {
                       }}
                       className="w-full bg-gradient-to-r from-pink-600 to-rose-600 hover:opacity-90 text-white py-3 rounded-xl text-xs font-body font-black uppercase tracking-[0.16em] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
                     >
-                      Share Special Link 🔗
+                      <Link2 className="w-3.5 h-3.5" />
+                      <span>Share Special Link</span>
                     </button>
 
-                    {/* Claim Wish Option (for previous unassigned legacy wishes) */}
-                    {(!wish.user_id || (isAdmin && user && wish.user_id !== user.id)) && (
-                      <button
-                        onClick={() => handleClaim(wish.id)}
-                        disabled={claimingWishId === wish.id}
-                        className="w-full bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/30 py-2.5 rounded-xl text-xs font-body font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-                      >
-                        <span>🔗</span>
-                        <span>{claimingWishId === wish.id ? 'Linking...' : 'Link to My Account'}</span>
-                      </button>
-                    )}
-
-                    {/* Danger: Delete Wish Button */}
+                    {/* Delete Wish Button */}
                     <button
                       onClick={() => {
                         setWishToDelete(wish);
@@ -645,7 +591,7 @@ const WishList = () => {
                       }}
                       className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/25 hover:border-red-500/40 py-2.5 rounded-xl text-xs font-body font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
                     >
-                      <span>🗑️</span>
+                      <Trash2 className="w-3.5 h-3.5" />
                       <span>Delete Wish Story</span>
                     </button>
                   </div>
@@ -656,7 +602,7 @@ const WishList = () => {
         )}
       </div>
 
-      {/* GitHub-Style Delete Confirmation Modal with Warning */}
+      {/* GitHub-Style Delete Confirmation Modal */}
       <AnimatePresence>
         {wishToDelete && (
           <div className="fixed inset-0 z-[1500] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
@@ -671,7 +617,7 @@ const WishList = () => {
               <div className="flex items-center justify-between pb-4 mb-4 border-b border-white/10">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-2xl bg-red-500/20 border border-red-500/30 flex items-center justify-center text-xl text-red-400">
-                    ⚠️
+                    <Trash2 className="w-5 h-5 text-red-400" />
                   </div>
                   <div>
                     <span className="text-[10px] font-body font-black uppercase tracking-[0.2em] text-red-400 block">
@@ -701,7 +647,6 @@ const WishList = () => {
               <div className="space-y-4 mb-6">
                 <div className="bg-red-950/40 border border-red-500/30 rounded-2xl p-4 text-xs font-body text-red-200/90 leading-relaxed space-y-2">
                   <p className="font-bold flex items-center gap-1.5 text-red-300">
-                    <span>🚨</span>
                     <span>Warning: Unexpected bad things will happen if you don't read this!</span>
                   </p>
                   <p>
@@ -711,10 +656,10 @@ const WishList = () => {
                     <li>Personalized dedication letter & love note content</li>
                     <li>Uploaded photo gallery images & coverflow slides</li>
                     <li>Interactive quiz questions, stickers & lockscreen passcode</li>
-                    <li>Memory archive polaroids & custom TV video reel</li>
+                    <li>Memory archive polaroids & custom video reel</li>
                   </ul>
                   <p className="text-red-300 font-semibold pt-1">
-                    ⚠️ The public link will immediately cease to function and you will permanently lose all access to this wish.
+                    The public link will immediately cease to function and you will permanently lose all access to this wish.
                   </p>
                 </div>
 
@@ -728,13 +673,12 @@ const WishList = () => {
                     onChange={(e) => setConfirmNameInput(e.target.value)}
                     placeholder={wishToDelete.recipient_name}
                     disabled={isDeleting}
-                    className="w-full bg-black/60 border border-red-500/40 focus:border-red-500 focus:ring-2 focus:ring-red-500/30 rounded-xl px-4 py-3 font-body text-sm text-white placeholder:text-white/20 transition-all outline-none"
-                    autoFocus
+                    className="w-full bg-black/50 border border-red-500/40 rounded-xl px-4 py-3 font-mono text-sm text-white placeholder:text-white/20 focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none transition-all"
                   />
                 </div>
 
                 {deleteError && (
-                  <p className="text-xs font-body text-red-400 bg-red-950/60 p-3 rounded-xl border border-red-500/40">
+                  <p className="text-red-400 text-xs font-body bg-red-950/60 p-3 rounded-xl border border-red-500/40">
                     {deleteError}
                   </p>
                 )}
@@ -749,10 +693,7 @@ const WishList = () => {
                   className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-red-950/40 disabled:text-red-300/30 disabled:border-red-900/30 border border-red-500/50 text-white font-body font-black text-xs uppercase tracking-[0.14em] py-3.5 px-6 rounded-xl transition-all shadow-lg active:scale-95 cursor-pointer disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isDeleting ? (
-                    <>
-                      <span className="animate-spin">⏳</span>
-                      <span>Deleting Permanently...</span>
-                    </>
+                    <span>Deleting Permanently...</span>
                   ) : (
                     <span>I understand consequences, delete wish</span>
                   )}
@@ -775,16 +716,6 @@ const WishList = () => {
           </div>
         )}
       </AnimatePresence>
-
-      {/* Master Admin Passcode Modal (Passcode 1622) */}
-      <AdminPasscodeModal
-        isOpen={showPasscodeModal}
-        onClose={() => setShowPasscodeModal(false)}
-        onSuccess={() => {
-          setShowPasscodeModal(false);
-          fetchWishes();
-        }}
-      />
     </div>
   );
 };
@@ -794,12 +725,7 @@ const WishList = () => {
 const WishEditorWrapper = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const location = useLocation();
-  const basePath = location.pathname.startsWith('/wishes')
-    ? '/wishes'
-    : location.pathname.startsWith('/dashboard')
-      ? '/dashboard'
-      : '/admin';
+  const basePath = '/wishes';
   const { fetchWishById, currentWishId, isLoading, error } = useCmsStore();
 
   useEffect(() => {
@@ -889,8 +815,8 @@ const WishEditor = ({ basePath = '/admin' }: { basePath?: string }) => {
     const formData = new FormData();
     formData.append('file', file);
     try {
-      const token = useAuthStore.getState().getToken() || localStorage.getItem('admin_token') || '';
-      const res = await fetch(`${API_URL}/api/cms/upload`, { 
+      const token = useAuthStore.getState().getToken() || '';
+      const res = await fetch(`${API_BASE}/cms/upload`, { 
         method: 'POST', 
         headers: { 'Authorization': `Bearer ${token}` },
         body: formData 
@@ -913,8 +839,8 @@ const WishEditor = ({ basePath = '/admin' }: { basePath?: string }) => {
     const formData = new FormData();
     formData.append('file', file);
     try {
-      const token = useAuthStore.getState().getToken() || localStorage.getItem('admin_token') || '';
-      const res = await fetch(`${API_URL}/api/cms/upload`, { 
+      const token = useAuthStore.getState().getToken() || '';
+      const res = await fetch(`${API_BASE}/cms/upload`, { 
         method: 'POST', 
         headers: { 'Authorization': `Bearer ${token}` },
         body: formData 

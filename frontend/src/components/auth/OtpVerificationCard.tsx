@@ -22,7 +22,7 @@ export const OtpVerificationCard: React.FC<OtpVerificationCardProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const { verifyOtp, resendOtp, isLoading, rememberMe } = useAuthStore();
+  const { verifyOtp, resendOtp, isLoading, rememberMe, devOtp, isSandboxRestricted } = useAuthStore();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -36,6 +36,16 @@ export const OtpVerificationCard: React.FC<OtpVerificationCardProps> = ({
 
     return () => clearInterval(interval);
   }, []);
+
+  const handleQuickFill = (code: string) => {
+    const cleanDigits = code.replace(/\D/g, '').slice(0, 6).split('');
+    const newDigits = ['', '', '', '', '', ''];
+    cleanDigits.forEach((digit, i) => {
+      if (i < 6) newDigits[i] = digit;
+    });
+    setDigits(newDigits);
+    inputRefs.current[5]?.focus();
+  };
 
   const handleDigitChange = (index: number, value: string) => {
     // Handle multiple characters pasted
@@ -114,7 +124,7 @@ export const OtpVerificationCard: React.FC<OtpVerificationCardProps> = ({
     setIsResending(false);
 
     if (result.success) {
-      setStatusMessage('A new 6-digit code has been sent to your email.');
+      setStatusMessage(result.message || 'A new 6-digit code has been dispatched.');
       setCountdown(60);
       setDigits(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
@@ -145,7 +155,7 @@ export const OtpVerificationCard: React.FC<OtpVerificationCardProps> = ({
         </button>
 
         {/* Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 shadow-[0_0_20px_rgba(244,63,94,0.15)]">
             <ShieldCheck className="w-7 h-7" />
           </div>
@@ -154,12 +164,41 @@ export const OtpVerificationCard: React.FC<OtpVerificationCardProps> = ({
             Verify Your Email
           </h2>
           <p className="text-sm text-white/60">
-            We sent a 6-digit verification code to
+            Verification code requested for
           </p>
           <p className="text-sm font-semibold text-rose-300 mt-1 font-mono break-all">
             {email}
           </p>
         </div>
+
+        {/* Resend Sandbox Diagnostic Card */}
+        {isSandboxRestricted && devOtp && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs space-y-2.5"
+          >
+            <div className="flex items-start gap-2">
+              <Sparkles className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <span className="font-semibold text-amber-300">Resend Testing Sandbox Notice:</span>
+                <p className="text-amber-200/80 mt-1 leading-relaxed">
+                  The default test sender (<code className="bg-black/40 px-1 py-0.5 rounded text-amber-300">onboarding@resend.dev</code>) only delivers real inbox emails to the account owner (<code className="bg-black/40 px-1 py-0.5 rounded text-amber-300">kushalsaialeti98@gmail.com</code>).
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between pt-1 border-t border-amber-500/20">
+              <span className="font-mono text-xs text-amber-300 font-bold">Code: {devOtp}</span>
+              <button
+                type="button"
+                onClick={() => handleQuickFill(devOtp)}
+                className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-[11px] font-semibold transition-colors border border-amber-500/30"
+              >
+                Auto Fill Code
+              </button>
+            </div>
+          </motion.div>
+        )}
 
         {/* Status / Error Alerts */}
         {errorMessage && (
@@ -173,7 +212,7 @@ export const OtpVerificationCard: React.FC<OtpVerificationCardProps> = ({
           </motion.div>
         )}
 
-        {statusMessage && (
+        {statusMessage && !isSandboxRestricted && (
           <motion.div
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}

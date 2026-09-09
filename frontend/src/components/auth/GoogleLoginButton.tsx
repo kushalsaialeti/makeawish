@@ -1,9 +1,4 @@
 import React, { useState } from 'react';
-import { useAuthStore } from '../../store/authStore';
-import { useNavigate } from 'react-router-dom';
-
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'dummy-google-client-id.apps.googleusercontent.com';
-const isDummyClientId = !GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.includes('dummy');
 
 interface GoogleLoginButtonProps {
   rememberMe?: boolean;
@@ -12,67 +7,16 @@ interface GoogleLoginButtonProps {
 }
 
 export const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
-  rememberMe = true,
   className = '',
-  buttonText = 'Continue with Google',
+  buttonText = 'Continue with Google (Coming Soon)',
 }) => {
-  const { googleLogin, isLoading } = useAuthStore();
-  const navigate = useNavigate();
-  const [errorNotice, setErrorNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  const handleGoogleClick = async () => {
-    setErrorNotice(null);
-
-    // If client ID is dummy or not configured yet:
-    if (isDummyClientId) {
-      // In development / demo mode, provide a friendly simulated Google Auth login to preview the experience
-      // and display instructions for the live key.
-      const simulatedGoogleProfile = {
-        email: 'celebration.explorer@gmail.com',
-        name: 'Google Explorer',
-        picture: 'https://api.dicebear.com/7.x/bottts/svg?seed=google-explorer',
-        sub: 'google_oauth_sub_demo_user',
-      };
-
-      const res = await googleLogin(simulatedGoogleProfile, rememberMe);
-      if (res.success) {
-        navigate('/wishes');
-      } else {
-        setErrorNotice(res.error || 'Failed to authenticate');
-      }
-      return;
-    }
-
-    // When a valid Google Client ID is configured in .env:
-    // Initialize Google Identity Services OAuth
-    if (typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
-      (window as any).google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: async (response: any) => {
-          if (response.credential) {
-            const res = await googleLogin({ credential: response.credential }, rememberMe);
-            if (res.success) {
-              navigate('/wishes');
-            } else {
-              setErrorNotice(res.error || 'Google login failed');
-            }
-          }
-        },
-      });
-
-      (window as any).google.accounts.id.prompt();
-    } else {
-      // Fallback
-      const res = await googleLogin({
-        email: 'google.user@makeawish.app',
-        name: 'Google User',
-        sub: 'google_user_demo',
-      }, rememberMe);
-
-      if (res.success) {
-        navigate('/wishes');
-      }
-    }
+  const handleGoogleClick = () => {
+    setNotice('Google OAuth sign-in & sign-up are coming in a future update. Please authenticate using Email + OTP + 4-Digit Security PIN.');
+    setTimeout(() => {
+      setNotice(null);
+    }, 6000);
   };
 
   return (
@@ -80,10 +24,9 @@ export const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
       <button
         type="button"
         onClick={handleGoogleClick}
-        disabled={isLoading}
-        className={`w-full py-3 px-4 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] hover:border-white/20 transition-all duration-300 flex items-center justify-center gap-3 text-sm font-medium text-white/90 group active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+        className={`w-full py-3 px-4 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/20 transition-all duration-300 flex items-center justify-center gap-3 text-sm font-medium text-white/70 group active:scale-[0.99] cursor-pointer ${className}`}
       >
-        <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24">
+        <svg className="w-5 h-5 flex-shrink-0 opacity-70 group-hover:opacity-100 transition-opacity" viewBox="0 0 24 24">
           <path
             fill="#EA4335"
             d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z"
@@ -104,8 +47,10 @@ export const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
         <span>{buttonText}</span>
       </button>
 
-      {errorNotice && (
-        <p className="text-xs text-rose-400 mt-2 text-center">{errorNotice}</p>
+      {notice && (
+        <div className="mt-2.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs text-center font-body animate-fadeIn">
+          {notice}
+        </div>
       )}
     </div>
   );

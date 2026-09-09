@@ -192,7 +192,7 @@ const defaultMemories: MemoriesContent = {
   polaroids: Array(7).fill({ url: 'https://images.unsplash.com/photo-1516627145497-ae6968895b74', text: 'A memory...' })
 };
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+import { API_BASE } from '../config/api';
 
 const normalizeClientContent = (content: any) => {
   if (!content || typeof content !== 'object') return {};
@@ -264,7 +264,7 @@ export const useCmsStore = create<CmsState>((set, get) => ({
   fetchWishBySlug: async (slug: string) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await fetch(`${API_URL}/api/cms/slug/${slug}`);
+      const response = await fetch(`${API_BASE}/cms/slug/${slug}`);
       if (!response.ok) throw new Error('Wish not found');
       const data: WishData = await response.json();
       
@@ -291,8 +291,8 @@ export const useCmsStore = create<CmsState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const { useAuthStore } = await import('./authStore');
-      const token = useAuthStore.getState().getToken() || localStorage.getItem('admin_token') || sessionStorage.getItem('makeawish_admin_token') || '';
-      const response = await fetch(`${API_URL}/api/cms/id/${id}`, {
+      const token = useAuthStore.getState().getToken() || '';
+      const response = await fetch(`${API_BASE}/cms/id/${id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.status === 401) {
@@ -324,8 +324,8 @@ export const useCmsStore = create<CmsState>((set, get) => ({
   createWish: async (slug, name) => {
     set({ isLoading: true });
     const { useAuthStore } = await import('./authStore');
-    const token = useAuthStore.getState().getToken() || localStorage.getItem('admin_token') || sessionStorage.getItem('makeawish_admin_token') || '';
-    const response = await fetch(`${API_URL}/api/cms`, {
+    const token = useAuthStore.getState().getToken() || '';
+    const response = await fetch(`${API_BASE}/cms`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
@@ -344,7 +344,7 @@ export const useCmsStore = create<CmsState>((set, get) => ({
 
   updateSection: async (section, content) => {
     const id = get().currentWishId;
-    if (!id) return;
+    if (!id) throw new Error('No active wish found to update.');
 
     const payload: any = {};
     
@@ -371,8 +371,8 @@ export const useCmsStore = create<CmsState>((set, get) => ({
     }
 
     const { useAuthStore } = await import('./authStore');
-    const token = useAuthStore.getState().getToken() || localStorage.getItem('admin_token') || '';
-    const response = await fetch(`${API_URL}/api/cms/${id}`, {
+    const token = useAuthStore.getState().getToken() || '';
+    const response = await fetch(`${API_BASE}/cms/${id}`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -382,8 +382,27 @@ export const useCmsStore = create<CmsState>((set, get) => ({
     });
 
     if (response.status === 401) {
-      localStorage.removeItem('admin_token');
-      window.location.reload();
+      window.location.href = '/login';
+      return;
+    }
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to save changes to database');
+    }
+
+    if (data.content) {
+      const normalized = normalizeClientContent(data.content);
+      set({
+        isPublished: data.is_published,
+        scrapbookHero: { ...defaultScrapbookHero, ...(normalized.scrapbookHero || {}) },
+        splashScreen: { ...defaultSplashScreen, ...(normalized.splashScreen || {}) },
+        zineSplitShowcase: { ...defaultZineSplitShowcase, ...(normalized.zineSplitShowcase || {}) },
+        coverflowGallery: { ...defaultCoverflowGallery, ...(normalized.coverflowGallery || {}) },
+        zineArchive: { ...defaultZineArchive, ...(normalized.zineArchive || {}) },
+        giftSequence: { ...defaultGiftSequence, ...(normalized.giftSequence || {}) },
+        memories: { ...defaultMemories, ...(normalized.memories || {}) },
+      });
     }
   },
 
@@ -397,7 +416,7 @@ export const useCmsStore = create<CmsState>((set, get) => ({
     if (!slug) return;
     
     try {
-      const response = await fetch(`${API_URL}/api/cms/slug/${slug}`);
+      const response = await fetch(`${API_BASE}/cms/slug/${slug}`);
       if (!response.ok) return;
       const data: WishData = await response.json();
       const content = data.content || {};

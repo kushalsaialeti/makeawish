@@ -152,20 +152,6 @@ function Home({ slug }: { slug: string }) {
   );
 }
 
-import { AdminAuth } from './pages/AdminAuth';
-import { AdminConsole } from './pages/AdminConsole';
-
-function AdminRoute() {
-  const { isAdmin } = useAuthStore();
-  const savedAdminToken = sessionStorage.getItem('makeawish_admin_token');
-
-  if (isAdmin || savedAdminToken) {
-    return <AdminConsole />;
-  }
-
-  return <AdminAuth />;
-}
-
 function RootRoute() {
   const { isAuthenticated, isLoading } = useAuthStore();
 
@@ -200,19 +186,19 @@ function App() {
           {/* Main Launch Route: Login page / Auto-redirect to /wishes if authenticated */}
           <Route path="/" element={<RootRoute />} />
 
-          {/* Authentication Routes for Normal Users */}
+          {/* Authentication Routes for All Users */}
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
 
-          {/* Secret Super Admin Route (Passcode 1622 + Admin OTP Verification) */}
-          <Route path="/admin-1622/*" element={<AdminRoute />} />
-          <Route path="/admin-1622" element={<AdminRoute />} />
-          <Route path="/admin" element={<Navigate to="/admin-1622" replace />} />
-          <Route path="/admin/*" element={<Navigate to="/admin-1622" replace />} />
-
-          {/* Protected Creator Studio Routes for Normal Users */}
+          {/* Protected Creator Studio Routes */}
           <Route path="/wishes/*" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-          <Route path="/dashboard/*" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+          <Route path="/wishes" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+          <Route path="/dashboard/*" element={<Navigate to="/wishes" replace />} />
+          <Route path="/dashboard" element={<Navigate to="/wishes" replace />} />
+          <Route path="/admin" element={<Navigate to="/login" replace />} />
+          <Route path="/admin/*" element={<Navigate to="/login" replace />} />
+          <Route path="/admin-1622" element={<Navigate to="/login" replace />} />
+          <Route path="/admin-1622/*" element={<Navigate to="/login" replace />} />
           
           {/* Public Recipient Experience Phases - Publicly viewable without login */}
           <Route path="/:slug/unlock" element={<WishView phase="unlock" />} />

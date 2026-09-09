@@ -12,6 +12,9 @@ export interface SendOtpResult {
   success: boolean;
   message: string;
   isMock?: boolean;
+  isSandboxRestricted?: boolean;
+  restrictedOwnerEmail?: string;
+  otpCode?: string;
 }
 
 /**
@@ -34,7 +37,8 @@ export const sendVerificationOtpEmail = async (
     return {
       success: true,
       message: 'Verification code generated. (Check server logs or replace RESEND_API_KEY in .env for live email delivery)',
-      isMock: true
+      isMock: true,
+      otpCode,
     };
   }
 
@@ -45,7 +49,7 @@ export const sendVerificationOtpEmail = async (
           Make<span style="color: #f43f5e;">A</span>Wish
         </h1>
         <p style="margin: 8px 0 0 0; font-size: 14px; color: #9ca3af; font-style: italic;">
-          Crafting timeless cinematic celebration moments
+          Crafting timeless celebration moments
         </p>
       </div>
 
@@ -77,9 +81,10 @@ export const sendVerificationOtpEmail = async (
     </div>
   `;
 
-  // Always prefer a safe sender format for Resend unless custom domain is verified
-  const preferredSender = process.env.EMAIL_FROM && !process.env.EMAIL_FROM.includes('@gmail.com')
-    ? process.env.EMAIL_FROM
+  // Prefer configured sender or default onboarding@resend.dev
+  const rawSender = (process.env.EMAIL_FROM || '').trim().replace(/^["']|["']$/g, '');
+  const preferredSender = rawSender && !rawSender.includes('@gmail.com')
+    ? rawSender
     : 'MakeAWish <onboarding@resend.dev>';
 
   try {
@@ -91,8 +96,30 @@ export const sendVerificationOtpEmail = async (
     });
 
     if (sendResponse.error) {
-      console.warn('[Resend Warning]: Primary send returned error:', sendResponse.error);
-      // If error was due to unverified custom from address, retry with onboarding@resend.dev
+      console.warn('[Resend API Response]:', sendResponse.error);
+
+      const errorMessage = sendResponse.error.message || '';
+      const isSandboxRestriction = Boolean(
+        sendResponse.error.statusCode === 403 ||
+        errorMessage.includes('only send testing emails') ||
+        errorMessage.includes('resend.com/domains')
+      );
+
+      if (isSandboxRestriction) {
+        console.warn(`\n[Resend Sandbox Notice]: Cannot deliver live email to "${recipientEmail}" because onboarding@resend.dev only allows sending to account owner (kushalsaialeti98@gmail.com).`);
+        console.warn(`[Resend Sandbox Notice]: To deliver to all email addresses, add & verify your custom domain at resend.com/domains.`);
+        console.log(`[MakeAWish Auth] Verification OTP for ${recipientEmail}: [ ${otpCode} ]\n`);
+
+        return {
+          success: true,
+          isSandboxRestricted: true,
+          restrictedOwnerEmail: 'kushalsaialeti98@gmail.com',
+          otpCode,
+          message: `Resend sandbox note: onboarding@resend.dev only sends real emails to kushalsaialeti98@gmail.com. Verification code: ${otpCode}`,
+        };
+      }
+
+      // Retry once if error was due to custom domain misconfig
       if (preferredSender !== 'MakeAWish <onboarding@resend.dev>') {
         const fallbackResponse = await resend.emails.send({
           from: 'MakeAWish <onboarding@resend.dev>',
@@ -100,26 +127,35 @@ export const sendVerificationOtpEmail = async (
           subject: `Your MakeAWish Verification Code: ${otpCode}`,
           html: htmlContent,
         });
+
         if (fallbackResponse.error) {
           console.error('[Resend Error]: Fallback send failed:', fallbackResponse.error);
+          return {
+            success: true,
+            isSandboxRestricted: true,
+            otpCode,
+            message: `Verification code generated: ${otpCode}`,
+          };
         } else {
-          console.log('[Resend Success]: Email sent via fallback onboarding sender, ID:', fallbackResponse.data?.id);
+          console.log('[Resend Success]: Email sent via fallback sender, ID:', fallbackResponse.data?.id);
         }
       }
     } else {
-      console.log('[Resend Success]: Verification email dispatched, ID:', sendResponse.data?.id);
+      console.log('[Resend Success]: Verification email dispatched directly to recipient inbox, ID:', sendResponse.data?.id);
     }
 
     return {
       success: true,
-      message: 'Verification email sent successfully.',
-      isMock: false
+      message: 'A 6-digit verification code has been dispatched to your email.',
+      isMock: false,
     };
   } catch (error: any) {
-    console.error('[Email Service Error]:', error);
+    console.error('[Email Service Exception]:', error);
     return {
       success: true,
-      message: `Email sending fallback: ${error.message || 'Unknown'}. OTP code printed to server console.`,
+      isSandboxRestricted: true,
+      otpCode,
+      message: `Verification code generated: ${otpCode}. (Check server console for details)`,
       isMock: true
     };
   }

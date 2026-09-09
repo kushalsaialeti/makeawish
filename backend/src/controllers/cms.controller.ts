@@ -1,6 +1,8 @@
 import { Response } from 'express';
 import { supabase } from '../config/supabase';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';
+import { getOccasionTemplate } from '../services/templates.service';
+import { ensureUserWishesLinked } from '../services/user.service';
 
 /**
  * Normalizes wish content structure to seamlessly support both flat legacy keys
@@ -69,24 +71,28 @@ export const normalizeWishContent = (content: any): any => {
   return normalized;
 };
 
-// Get a list of wishes (Super Admin sees all, regular user sees their own + legacy unclaimed wishes)
+// Get a list of wishes owned by the authenticated user
 export const getAllWishes = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
-    const isSuperAdmin = req.user?.role === 'super_admin';
+    const userEmail = req.user?.email || '';
 
     if (!userId) {
       res.status(401).json({ error: 'User not authenticated' });
       return;
     }
 
+    // Auto-link historical wishes if logged in with kushalsaialeti98@gmail.com
+    await ensureUserWishesLinked(userId, userEmail);
+
     let query = supabase
       .from('wishes')
       .select('id, slug, recipient_name, occasion, is_published, created_at, user_id')
       .order('created_at', { ascending: false });
 
-    // If not super admin, scope to user's wishes OR legacy unassigned wishes
-    if (!isSuperAdmin) {
+    if (userEmail.trim().toLowerCase() === 'kushalsaialeti98@gmail.com') {
+      query = query.or(`user_id.eq.${userId},user_id.is.null,slug.in.("luckyyyy-thallii","puppy","lucky-thalli")`);
+    } else {
       query = query.or(`user_id.eq.${userId},user_id.is.null`);
     }
 
@@ -105,34 +111,7 @@ export const getAllWishes = async (req: AuthenticatedRequest, res: Response): Pr
   }
 };
 
-// Admin Master Endpoint to retrieve ALL wishes across the entire database
-export const getAdminAllWishes = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  try {
-    const { data, error } = await supabase
-      .from('wishes')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('[CMS Admin] Fetch All Wishes Error:', error);
-      res.status(500).json({ error: error.message });
-      return;
-    }
-
-    // Normalize content for all records
-    const normalizedWishes = (data || []).map((wish) => ({
-      ...wish,
-      content: normalizeWishContent(wish.content),
-    }));
-
-    res.status(200).json(normalizedWishes);
-  } catch (error: any) {
-    console.error('[CMS Admin] Fetch All Wishes Unexpected Error:', error);
-    res.status(500).json({ error: 'Failed to fetch admin showcase wishes' });
-  }
-};
-
-// Claim a legacy wish (assigns wish to the current authenticated user)
+// Claim an unassigned wish
 export const claimWish = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
@@ -161,7 +140,7 @@ export const claimWish = async (req: AuthenticatedRequest, res: Response): Promi
   }
 };
 
-// Create a new wish linked to the authenticated user and chosen occasion
+// Create a new wish with occasion-specific template
 export const createWish = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
@@ -189,20 +168,31 @@ export const createWish = async (req: AuthenticatedRequest, res: Response): Prom
       return;
     }
 
+    // Initialize with occasion-tailored template content
+    const templateContent = getOccasionTemplate(occasion, recipient_name);
+
     const insertPayload: any = { 
       slug, 
       recipient_name, 
       occasion,
       user_id: userId,
       is_published: false,
-      content: {} 
+      content: templateContent 
     };
 
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('wishes')
       .insert(insertPayload)
       .select()
       .single();
+
+    if (error && (error.code === '23503' || error.message?.includes('foreign key'))) {
+      console.warn('[CMS] Retrying wish creation with user_id: null due to FK constraint');
+      insertPayload.user_id = null;
+      const retry = await supabase.from('wishes').insert(insertPayload).select().single();
+      data = retry.data;
+      error = retry.error;
+    }
 
     if (error) {
       console.error('[CMS] Create Wish Error:', error);
@@ -217,7 +207,7 @@ export const createWish = async (req: AuthenticatedRequest, res: Response): Prom
   }
 };
 
-// Get a single wish by slug (Public view for recipients — flexible lookup & normalization)
+// Get a single wish by slug (Public recipient view)
 export const getWishBySlug = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const rawSlug = req.params.slug;
@@ -288,12 +278,12 @@ export const getWishBySlug = async (req: AuthenticatedRequest, res: Response): P
   }
 };
 
-// Get a single wish by ID (For the creator editor — checks ownership or admin)
+// Get a single wish by ID (For creator editor)
 export const getWishById = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const userId = req.user?.id;
-    const isSuperAdmin = req.user?.role === 'super_admin';
+    const userEmail = req.user?.email || '';
 
     const { data, error } = await supabase
       .from('wishes')
@@ -306,9 +296,10 @@ export const getWishById = async (req: AuthenticatedRequest, res: Response): Pro
       return;
     }
 
-    // Ownership check (bypassed for super admin or unassigned legacy wishes)
-    if (!isSuperAdmin && data.user_id && userId && data.user_id !== userId) {
-      res.status(403).json({ error: 'Unauthorized: You do not have permission to edit this wish.' });
+    // Ownership check (bypassed for unassigned wishes or kushalsaialeti98@gmail.com)
+    const isOwner = data.user_id === userId || userEmail.toLowerCase() === 'kushalsaialeti98@gmail.com' || !data.user_id;
+    if (!isOwner) {
+      res.status(403).json({ error: 'Unauthorized: You do not have permission to view or edit this wish.' });
       return;
     }
 
@@ -321,15 +312,14 @@ export const getWishById = async (req: AuthenticatedRequest, res: Response): Pro
   }
 };
 
-// Update wish content (Checks ownership or admin)
+// Update wish content
 export const updateWishContent = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const userId = req.user?.id;
-    const isSuperAdmin = req.user?.role === 'super_admin';
+    const userEmail = req.user?.email || '';
     const { content, is_published, occasion, recipient_name } = req.body;
 
-    // Verify wish exists
     const { data: existingWish, error: findError } = await supabase
       .from('wishes')
       .select('id, user_id')
@@ -341,8 +331,9 @@ export const updateWishContent = async (req: AuthenticatedRequest, res: Response
       return;
     }
 
-    if (!isSuperAdmin && existingWish.user_id && userId && existingWish.user_id !== userId) {
-      res.status(403).json({ error: 'Unauthorized: You do not own this wish.' });
+    const isOwner = existingWish.user_id === userId || userEmail.toLowerCase() === 'kushalsaialeti98@gmail.com' || !existingWish.user_id;
+    if (!isOwner) {
+      res.status(403).json({ error: 'Unauthorized: You do not have permission to edit this wish.' });
       return;
     }
 
@@ -355,11 +346,12 @@ export const updateWishContent = async (req: AuthenticatedRequest, res: Response
     if (occasion !== undefined) updateData.occasion = occasion;
     if (recipient_name !== undefined) updateData.recipient_name = recipient_name;
 
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('wishes')
       .update(updateData)
       .eq('id', id)
-      .select();
+      .select()
+      .single();
 
     if (error) {
       console.error('[CMS] Supabase Update Error:', error);
@@ -367,7 +359,7 @@ export const updateWishContent = async (req: AuthenticatedRequest, res: Response
       return;
     }
 
-    res.status(200).json(data[0]);
+    res.status(200).json(data);
   } catch (error: any) {
     console.error('[CMS] Unexpected Update Error:', error);
     res.status(500).json({ error: 'Failed to update wish' });
@@ -388,14 +380,13 @@ export const uploadMedia = async (req: AuthenticatedRequest, res: Response): Pro
   }
 };
 
-// Delete a wish completely (Checks ownership or admin)
+// Delete a wish permanently
 export const deleteWish = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const userId = req.user?.id;
-    const isSuperAdmin = req.user?.role === 'super_admin';
+    const userEmail = req.user?.email || '';
 
-    // Verify ownership
     const { data: existingWish, error: findError } = await supabase
       .from('wishes')
       .select('id, user_id')
@@ -407,7 +398,8 @@ export const deleteWish = async (req: AuthenticatedRequest, res: Response): Prom
       return;
     }
 
-    if (!isSuperAdmin && existingWish.user_id && userId && existingWish.user_id !== userId) {
+    const isOwner = existingWish.user_id === userId || userEmail.toLowerCase() === 'kushalsaialeti98@gmail.com' || !existingWish.user_id;
+    if (!isOwner) {
       res.status(403).json({ error: 'Unauthorized: You do not own this wish.' });
       return;
     }
