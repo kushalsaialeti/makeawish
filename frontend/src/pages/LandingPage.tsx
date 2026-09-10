@@ -315,6 +315,7 @@ const HeroSection: React.FC<{ id?: string, onPrimaryClick: () => void }> = ({ id
                 <h1 className="font-display italic text-display-hero text-[#f5f1e8] drop-shadow-[0_15px_35px_rgba(0,0,0,0.8)] tracking-[-0.045em] leading-hero">
                   Some Wishes Are Meant
                 </h1>
+                <br></br>
                 <h2 className="font-display italic text-display-hero text-pink-200/95 -mt-2 sm:-mt-4 md:-mt-6 drop-shadow-[0_15px_35px_rgba(122,16,34,0.6)] tracking-[-0.045em] leading-hero">
                   To Be Experienced.
                 </h2>
