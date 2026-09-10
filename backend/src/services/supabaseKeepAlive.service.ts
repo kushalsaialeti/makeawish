@@ -62,9 +62,9 @@ export const startSupabaseKeepAliveCron = (): void => {
 
   // 2. Schedule recurring cron: Every 3 days at 03:00 AM ('0 3 */3 * *')
   cron.schedule('0 3 */3 * *', async () => {
-    console.log('[Supabase Keep-Alive Cron] Triggering scheduled 3-day database heartbeat...');
+    // console.log('[Supabase Keep-Alive Cron] Triggering scheduled 3-day database heartbeat...');
     await pingSupabase();
   });
 
-  console.log('[Supabase Keep-Alive] Cron scheduled: Running every 3 days at 03:00 AM to keep Supabase perpetually active.');
+  // console.log('[Supabase Keep-Alive] Cron scheduled: Running every 3 days at 03:00 AM to keep Supabase perpetually active.');
 };

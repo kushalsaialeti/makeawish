@@ -3,7 +3,7 @@ import React from 'react';
 // --- DISPLAY TYPOGRAPHY ---
 interface DisplayProps extends React.HTMLAttributes<HTMLHeadingElement> {
   size?: 'hero' | 'xl' | 'lg' | 'md';
-  as?: 'h1' | 'h2' | 'h3' | 'div';
+  as?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'div' | 'span' | 'p';
   italic?: boolean;
   children: React.ReactNode;
 }
@@ -11,7 +11,7 @@ interface DisplayProps extends React.HTMLAttributes<HTMLHeadingElement> {
 export const Display: React.FC<DisplayProps> = ({
   size = 'lg',
   as: Component = 'h1',
-  italic = false,
+  italic = true,
   className = '',
   children,
   ...props

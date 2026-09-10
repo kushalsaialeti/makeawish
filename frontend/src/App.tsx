@@ -17,7 +17,9 @@ import { useKeepAlive } from './hooks/useKeepAlive';
 import { NotFound } from './pages/NotFound';
 import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
+import { LandingPage } from './pages/LandingPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { Navbar } from './components/layout/Navbar';
 
 import { Eyebrow, Handwritten } from './components/ui/Typography';
 
@@ -152,25 +154,32 @@ function Home({ slug }: { slug: string }) {
   );
 }
 
-function RootRoute() {
-  const { isAuthenticated, isLoading } = useAuthStore();
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#151111] flex flex-col items-center justify-center gap-3">
-        <Eyebrow accent>STARTING CELEBRATION STUDIO</Eyebrow>
-        <div className="font-display italic text-3xl md:text-4xl text-[#f5f1e8] animate-pulse">
-          Loading Magic...
-        </div>
-      </div>
-    );
+
+function GlobalNavigation() {
+  const location = useLocation();
+  const path = location.pathname;
+
+  // The global navbar is visible everywhere EXCEPT the slug shared link for the recipient viewing the surprise.
+  // Routes where global navbar is visible:
+  // - '/' (Landing page)
+  // - '/login', '/signup' (Authentication)
+  // - '/wishes' and '/wishes/*' (Creator Studio Dashboard & Editor)
+  // - '/dashboard' and '/dashboard/*'
+  // - '/admin' and '/admin/*'
+  const isRecipientExperience = 
+    path !== '/' &&
+    path !== '/login' &&
+    path !== '/signup' &&
+    !path.startsWith('/wishes') &&
+    !path.startsWith('/dashboard') &&
+    !path.startsWith('/admin');
+
+  if (isRecipientExperience) {
+    return null;
   }
 
-  if (isAuthenticated) {
-    return <Navigate to="/wishes" replace />;
-  }
-
-  return <Login />;
+  return <Navbar />;
 }
 
 function App() {
@@ -182,9 +191,10 @@ function App() {
 
   return (
     <BrowserRouter>
+        <GlobalNavigation />
         <Routes>
-          {/* Main Launch Route: Login page / Auto-redirect to /wishes if authenticated */}
-          <Route path="/" element={<RootRoute />} />
+          {/* Main Launch Route: Premium Cinematic Landing Page */}
+          <Route path="/" element={<LandingPage />} />
 
           {/* Authentication Routes for All Users */}
           <Route path="/login" element={<Login />} />

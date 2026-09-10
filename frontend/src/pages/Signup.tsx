@@ -60,7 +60,7 @@ export const Signup: React.FC = () => {
 
   if (showOtpScreen || pendingEmail) {
     return (
-      <div className="min-h-screen bg-[#0e0c0d] text-[#e6d0d2] relative flex flex-col items-center justify-center p-4 sm:p-6 overflow-hidden select-none font-sans selection:bg-[#7a1022]">
+      <div className="min-h-screen bg-[#0e0c0d] text-[#e6d0d2] relative flex flex-col items-center justify-center pt-24 pb-12 px-4 sm:px-6 overflow-hidden select-none font-sans selection:bg-[#7a1022]">
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-gradient-to-tr from-rose-600/15 via-pink-900/10 to-amber-600/10 rounded-full blur-[140px] pointer-events-none" />
         <OtpVerificationCard
           email={pendingEmail || email}
@@ -72,7 +72,7 @@ export const Signup: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0e0c0d] text-[#e6d0d2] relative flex flex-col items-center justify-center p-4 sm:p-6 overflow-hidden select-none font-sans selection:bg-[#7a1022]">
+    <div className="min-h-screen bg-[#0e0c0d] text-[#e6d0d2] relative flex flex-col items-center justify-center pt-24 pb-12 px-4 sm:px-6 overflow-hidden select-none font-sans selection:bg-[#7a1022]">
       {/* Ambient background glow */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-gradient-to-tr from-rose-600/15 via-pink-900/10 to-amber-600/10 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute bottom-10 right-10 w-80 h-80 bg-purple-900/15 rounded-full blur-[100px] pointer-events-none" />

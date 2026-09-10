@@ -265,7 +265,7 @@ const WishList = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#151111] text-[#e6d0d2] p-4 sm:p-8 md:p-16 font-sans">
+    <div className="min-h-screen bg-[#151111] text-[#e6d0d2] pt-24 sm:pt-28 md:pt-32 pb-16 px-4 sm:px-8 md:px-16 font-sans">
       <div className="max-w-6xl mx-auto">
         {/* Top User Profile Bar */}
         <div className="flex justify-between items-center pb-6 mb-8 border-b border-white/10">
@@ -877,9 +877,9 @@ const WishEditor = ({ basePath = '/admin' }: { basePath?: string }) => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#151111] text-[#e6d0d2] flex flex-col overflow-hidden font-sans">
+    <div className="min-h-screen bg-[#151111] text-[#e6d0d2] flex flex-col overflow-hidden font-sans pt-16 sm:pt-[70px]">
       {/* Top Header */}
-      <header className="bg-[#1e1919] border-b border-white/10 px-6 py-4 flex justify-between items-center sticky top-0 z-[1000]">
+      <header className="bg-[#1e1919] border-b border-white/10 px-6 py-4 flex justify-between items-center sticky top-16 sm:top-[70px] z-40">
         <div className="flex items-center gap-4">
           <button 
             onClick={() => navigate(basePath)} 
