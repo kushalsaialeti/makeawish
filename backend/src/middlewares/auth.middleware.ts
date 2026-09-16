@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { supabase } from '../config/supabase';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'makeawish_jwt_secret_key_72hrs_timeout_2026_super_secure';
+const JWT_SECRET = process.env.JWT_SECRET || 'makeawish_jwt_secret_key_36hrs_timeout_2026_super_secure';
 
 export interface AuthenticatedRequest extends Request {
   user?: {

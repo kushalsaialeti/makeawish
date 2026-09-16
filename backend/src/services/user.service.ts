@@ -8,7 +8,6 @@ export interface AppUser {
   email: string;
   name: string;
   password_hash?: string;
-  security_pin_hash?: string;
   avatar?: string;
   google_id?: string;
   is_verified: boolean;
@@ -85,124 +84,137 @@ export const ensureUserWishesLinked = async (userId: string, email: string): Pro
 };
 
 /**
- * Find user by email (checks Supabase, fallback to memory)
+ * Find user by email (checks local cache and Supabase Auth admin)
  */
 export const findUserByEmail = async (email: string): Promise<AppUser | null> => {
   const normalizedEmail = email.trim().toLowerCase();
 
-  try {
-    const { data, error } = await supabase
-      .from('app_users')
-      .select('*')
-      .eq('email', normalizedEmail)
-      .maybeSingle();
-
-    if (!error && data) {
-      localUserStore.set(normalizedEmail, data);
-      return data as AppUser;
-    }
-  } catch (err) {
-    // Supabase app_users table fallback
+  // 1. Check local in-memory cache first
+  const cached = localUserStore.get(normalizedEmail);
+  if (cached && cached.otp_code) {
+    return cached;
   }
 
-  // Fallback to local memory cache
-  return localUserStore.get(normalizedEmail) || null;
+  // 2. Query Supabase Auth admin (persistent store)
+  try {
+    const { data: listData, error } = await supabase.auth.admin.listUsers();
+    if (!error && listData?.users) {
+      const authUser = listData.users.find(u => u.email?.toLowerCase() === normalizedEmail);
+      if (authUser) {
+        const meta = authUser.user_metadata || {};
+        const appUser: AppUser = {
+          id: authUser.id,
+          email: normalizedEmail,
+          name: meta.name || 'Dreamer',
+          password_hash: meta.password_hash,
+          avatar: meta.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(normalizedEmail)}`,
+          is_verified: Boolean(meta.is_verified ?? authUser.email_confirmed_at),
+          otp_code: cached?.otp_code || meta.otp_code,
+          otp_expires_at: cached?.otp_expires_at || meta.otp_expires_at,
+          created_at: authUser.created_at,
+          updated_at: authUser.updated_at || new Date().toISOString(),
+        };
+
+        localUserStore.set(normalizedEmail, appUser);
+        return appUser;
+      }
+    }
+  } catch (err: any) {
+    console.warn('[User Service] Supabase Auth lookup note:', err.message);
+  }
+
+  return cached || null;
 };
 
 /**
  * Find user by ID
  */
 export const findUserById = async (id: string): Promise<AppUser | null> => {
-  try {
-    const { data, error } = await supabase
-      .from('app_users')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle();
-
-    if (!error && data) {
-      return data as AppUser;
-    }
-  } catch (err) {
-    // Fallback
-  }
-
   for (const user of localUserStore.values()) {
     if (user.id === id) return user;
   }
+
+  try {
+    const { data, error } = await supabase.auth.admin.getUserById(id);
+    if (!error && data?.user) {
+      const authUser = data.user;
+      const meta = authUser.user_metadata || {};
+      const normalizedEmail = (authUser.email || '').toLowerCase();
+      const appUser: AppUser = {
+        id: authUser.id,
+        email: normalizedEmail,
+        name: meta.name || 'Dreamer',
+        password_hash: meta.password_hash,
+        avatar: meta.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(normalizedEmail)}`,
+        is_verified: Boolean(meta.is_verified ?? authUser.email_confirmed_at),
+        otp_code: meta.otp_code,
+        otp_expires_at: meta.otp_expires_at,
+        created_at: authUser.created_at,
+        updated_at: authUser.updated_at || new Date().toISOString(),
+      };
+
+      if (normalizedEmail) {
+        localUserStore.set(normalizedEmail, appUser);
+      }
+      return appUser;
+    }
+  } catch (err) {
+    // Ignore
+  }
+
   return null;
 };
 
 /**
- * Create or update unverified user for Email signup (includes 4-digit Security PIN)
+ * Create or update unverified user for Email signup
  */
 export const createOrUpdateSignupUser = async (
   name: string,
   email: string,
   passwordPlain: string,
-  otpCode: string,
-  pinPlain?: string
+  otpCode: string
 ): Promise<AppUser> => {
   const normalizedEmail = email.trim().toLowerCase();
   const password_hash = await bcrypt.hash(passwordPlain, 10);
-  const security_pin_hash = pinPlain ? await bcrypt.hash(pinPlain.trim(), 10) : undefined;
   const otp_expires_at = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 minutes
   const now = new Date().toISOString();
 
-  const existing = await findUserByEmail(normalizedEmail);
-  const userId = existing?.id || (await getOrCreateSupabaseAuthId(normalizedEmail, name));
+  const userId = await getOrCreateSupabaseAuthId(normalizedEmail, name);
 
   const userPayload: AppUser = {
     id: userId,
     email: normalizedEmail,
     name: name.trim() || 'Dreamer',
     password_hash,
-    security_pin_hash: security_pin_hash || existing?.security_pin_hash,
     avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(normalizedEmail)}`,
     is_verified: false,
     otp_code: otpCode,
     otp_expires_at,
-    created_at: existing?.created_at || now,
+    created_at: now,
     updated_at: now,
   };
 
-  // Save to memory cache
+  // 1. Save to memory cache
   localUserStore.set(normalizedEmail, userPayload);
 
-  // Try persisting to Supabase
+  // 2. Persist directly to Supabase Auth admin user_metadata
   try {
-    await supabase.from('app_users').upsert(userPayload);
-  } catch (err) {
-    console.log('[User Service] Supabase app_users persistence note (cached in memory):', (err as any)?.message);
+    await supabase.auth.admin.updateUserById(userId, {
+      user_metadata: {
+        name: userPayload.name,
+        password_hash,
+        avatar: userPayload.avatar,
+        is_verified: false,
+        otp_code: otpCode,
+        otp_expires_at,
+        updated_at: now,
+      }
+    });
+  } catch (err: any) {
+    console.warn('[User Service] Supabase Auth metadata persistence note:', err.message);
   }
 
   return userPayload;
-};
-
-/**
- * Set or update security PIN for a user
- */
-export const setSecurityPin = async (email: string, pinPlain: string): Promise<boolean> => {
-  const normalizedEmail = email.trim().toLowerCase();
-  const user = await findUserByEmail(normalizedEmail);
-  if (!user) return false;
-
-  const pinHash = await bcrypt.hash(pinPlain.trim(), 10);
-  user.security_pin_hash = pinHash;
-  user.updated_at = new Date().toISOString();
-
-  localUserStore.set(normalizedEmail, user);
-
-  try {
-    await supabase
-      .from('app_users')
-      .update({ security_pin_hash: pinHash, updated_at: user.updated_at })
-      .eq('email', normalizedEmail);
-  } catch (err) {
-    // Ignore
-  }
-
-  return true;
 };
 
 /**
@@ -220,16 +232,19 @@ export const updateUserOtp = async (email: string, otpCode: string): Promise<App
   localUserStore.set(normalizedEmail, user);
 
   try {
-    await supabase
-      .from('app_users')
-      .update({
+    await supabase.auth.admin.updateUserById(user.id, {
+      user_metadata: {
+        name: user.name,
+        password_hash: user.password_hash,
+        avatar: user.avatar,
+        is_verified: user.is_verified,
         otp_code: user.otp_code,
         otp_expires_at: user.otp_expires_at,
         updated_at: user.updated_at,
-      })
-      .eq('email', normalizedEmail);
-  } catch (err) {
-    // Ignore
+      }
+    });
+  } catch (err: any) {
+    console.warn('[User Service] Supabase Auth OTP update note:', err.message);
   }
 
   return user;
@@ -276,17 +291,19 @@ export const verifyUserWithOtp = async (
   await ensureUserWishesLinked(user.id, normalizedEmail);
 
   try {
-    await supabase
-      .from('app_users')
-      .update({
+    await supabase.auth.admin.updateUserById(user.id, {
+      user_metadata: {
+        name: user.name,
+        password_hash: user.password_hash,
+        avatar: user.avatar,
         is_verified: true,
         otp_code: null,
         otp_expires_at: null,
         updated_at: user.updated_at,
-      })
-      .eq('email', normalizedEmail);
-  } catch (err) {
-    // Ignore
+      }
+    });
+  } catch (err: any) {
+    console.warn('[User Service] Supabase Auth verify update note:', err.message);
   }
 
   return { success: true, message: 'Account verified successfully!', user };
@@ -301,15 +318,47 @@ export const verifyPassword = async (plainPassword: string, hash?: string): Prom
 };
 
 /**
- * Verify 4-digit Security PIN
+ * Update user password (for password reset)
  */
-export const verifySecurityPin = async (plainPin: string, hash?: string): Promise<boolean> => {
-  if (!hash) {
-    // Default initial PIN for kushalsaialeti98@gmail.com is 1622 if not yet set
-    return plainPin.trim() === '1622';
+export const updateUserPassword = async (email: string, newPasswordPlain: string): Promise<AppUser | null> => {
+  const normalizedEmail = email.trim().toLowerCase();
+  const user = await findUserByEmail(normalizedEmail);
+  if (!user) return null;
+
+  const password_hash = await bcrypt.hash(newPasswordPlain, 10);
+  const now = new Date().toISOString();
+
+  user.password_hash = password_hash;
+  user.otp_code = undefined;
+  user.otp_expires_at = undefined;
+  user.is_verified = true;
+  user.updated_at = now;
+
+  localUserStore.set(normalizedEmail, user);
+
+  // Link historical wishes if this is kushalsaialeti98@gmail.com
+  await ensureUserWishesLinked(user.id, normalizedEmail);
+
+  try {
+    await supabase.auth.admin.updateUserById(user.id, {
+      password: newPasswordPlain,
+      user_metadata: {
+        name: user.name,
+        password_hash,
+        avatar: user.avatar,
+        is_verified: true,
+        otp_code: null,
+        otp_expires_at: null,
+        updated_at: now,
+      }
+    });
+  } catch (err: any) {
+    console.warn('[User Service] Supabase Auth password update note:', err.message);
   }
-  return bcrypt.compare(plainPin.trim(), hash);
+
+  return user;
 };
+
 
 /**
  * Find or create user via Google Authentication

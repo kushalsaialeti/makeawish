@@ -4,10 +4,10 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { Eyebrow } from '../components/ui/Typography';
 import { GoogleLoginButton } from '../components/auth/GoogleLoginButton';
+import { SmoothOtpInput } from '../components/auth/SmoothOtpInput';
 import {
   Mail,
   Lock,
-  KeyRound,
   ShieldCheck,
   AlertCircle,
   RefreshCw,
@@ -20,7 +20,6 @@ export const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
-  const [pinDigits, setPinDigits] = useState<string[]>(['', '', '', '']);
   const [rememberMe, setRememberMe] = useState(true);
   const [countdown, setCountdown] = useState(60);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,7 +29,6 @@ export const Login: React.FC = () => {
   const {
     login,
     verifyLoginOtp,
-    verifySecurityPin,
     resendOtp,
     loginStep,
     setLoginStep,
@@ -72,34 +70,13 @@ export const Login: React.FC = () => {
 
     setIsSubmitting(true);
     setAuthError(null);
-    const res = await verifyLoginOtp(email, otpCode);
-    setIsSubmitting(false);
-
-    if (res.success) {
-      setStatusMessage('OTP verified. Please enter your 4-digit Security PIN.');
-    } else {
-      setAuthError(res.error || 'Invalid verification code.');
-    }
-  };
-
-  // Step 3: Verify 4-Digit Security PIN
-  const handlePinSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const pinCode = pinDigits.join('');
-    if (pinCode.length !== 4) {
-      setAuthError('Please enter all 4 digits of your Security PIN.');
-      return;
-    }
-
-    setIsSubmitting(true);
-    setAuthError(null);
-    const res = await verifySecurityPin(email, pinCode, rememberMe);
+    const res = await verifyLoginOtp(email, otpCode, rememberMe);
     setIsSubmitting(false);
 
     if (res.success) {
       navigate(from, { replace: true });
     } else {
-      setAuthError(res.error || 'Incorrect Security PIN.');
+      setAuthError(res.error || 'Invalid verification code.');
     }
   };
 
@@ -136,29 +113,23 @@ export const Login: React.FC = () => {
         {/* Top Icon Badge */}
         <div className="flex justify-center mb-4">
           <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-rose-400 shadow-inner">
-            {loginStep === 'credentials' && <Lock className="w-6 h-6" />}
-            {loginStep === 'otp' && <Mail className="w-6 h-6" />}
-            {loginStep === 'pin' && <KeyRound className="w-6 h-6" />}
+            {loginStep === 'credentials' ? <Lock className="w-6 h-6" /> : <Mail className="w-6 h-6" />}
           </div>
         </div>
 
         {/* Dynamic Header & Step Indicator */}
         <Eyebrow accent className="mb-1 text-rose-400">
-          {loginStep === 'credentials' && 'STEP 1 OF 3 • SIGN IN'}
-          {loginStep === 'otp' && 'STEP 2 OF 3 • EMAIL VERIFICATION'}
-          {loginStep === 'pin' && 'STEP 3 OF 3 • SECURITY PIN'}
+          {loginStep === 'credentials' ? 'STEP 1 OF 2 • SIGN IN' : 'STEP 2 OF 2 • EMAIL VERIFICATION'}
         </Eyebrow>
 
         <h1 className="font-display italic text-3xl sm:text-4xl text-white mb-2 leading-tight">
-          {loginStep === 'credentials' && 'Welcome Back'}
-          {loginStep === 'otp' && 'Enter Email Code'}
-          {loginStep === 'pin' && 'Enter Security PIN'}
+          {loginStep === 'credentials' ? 'Welcome Back' : 'Enter Email Code'}
         </h1>
 
         <p className="font-body text-xs sm:text-sm text-white/50 mb-6">
-          {loginStep === 'credentials' && 'Sign in to access your celebration studio and manage experiences.'}
-          {loginStep === 'otp' && `We sent a 6-digit verification code to ${email}`}
-          {loginStep === 'pin' && 'Enter your 4-digit Security PIN to complete login.'}
+          {loginStep === 'credentials'
+            ? 'Sign in to access your celebration studio and manage experiences.'
+            : `We sent a 6-digit verification code to ${email}`}
         </p>
 
         {/* Error / Status Alert */}
@@ -255,6 +226,12 @@ export const Login: React.FC = () => {
                       Remember me (36h session)
                     </span>
                   </label>
+                  <Link
+                    to="/reset-password"
+                    className="text-xs font-body text-rose-400/90 hover:text-rose-300 transition-colors font-medium"
+                  >
+                    Forgot password?
+                  </Link>
                 </div>
 
                 <button
@@ -324,27 +301,17 @@ export const Login: React.FC = () => {
                 </div>
               )}
 
-              <div className="flex justify-between items-center gap-2">
-                {otpDigits.map((digit, index) => (
-                  <input
-                    key={index}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={1}
-                    value={digit}
-                    onChange={(e) => {
-                      const clean = e.target.value.replace(/\D/g, '');
-                      const next = [...otpDigits];
-                      next[index] = clean;
-                      setOtpDigits(next);
-                      if (clean && index < 5) {
-                        (document.getElementById(`login-otp-${index + 1}`) as HTMLInputElement)?.focus();
-                      }
-                    }}
-                    id={`login-otp-${index}`}
-                    className="w-11 h-14 sm:w-13 sm:h-16 text-center text-2xl font-bold font-mono text-white bg-black/60 border border-white/20 focus:border-rose-500 focus:bg-rose-500/[0.08] rounded-2xl outline-none transition-all shadow-inner"
-                  />
-                ))}
+              <div className="py-2">
+                <label className="block text-[11px] font-body font-semibold uppercase tracking-[0.16em] text-white/60 mb-3 text-left">
+                  6-Digit Verification Code
+                </label>
+                <SmoothOtpInput
+                  value={otpDigits}
+                  onChange={setOtpDigits}
+                  disabled={isSubmitting}
+                  autoFocus={true}
+                  idPrefix="login-otp"
+                />
               </div>
 
               <button
@@ -359,8 +326,8 @@ export const Login: React.FC = () => {
                   </>
                 ) : (
                   <>
-                    <span>Next: Security PIN</span>
-                    <ArrowRight className="w-4 h-4" />
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>Verify & Enter Studio</span>
                   </>
                 )}
               </button>
@@ -381,68 +348,6 @@ export const Login: React.FC = () => {
                   className="text-rose-400 hover:text-rose-300 transition-colors disabled:text-white/30 cursor-pointer"
                 >
                   {countdown > 0 ? `Resend in ${countdown}s` : 'Resend Code'}
-                </button>
-              </div>
-            </motion.form>
-          )}
-
-          {loginStep === 'pin' && (
-            <motion.form
-              key="step-pin"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              onSubmit={handlePinSubmit}
-              className="space-y-6"
-            >
-              <div className="flex justify-center items-center gap-3">
-                {pinDigits.map((digit, index) => (
-                  <input
-                    key={index}
-                    type="password"
-                    inputMode="numeric"
-                    maxLength={1}
-                    value={digit}
-                    onChange={(e) => {
-                      const clean = e.target.value.replace(/\D/g, '');
-                      const next = [...pinDigits];
-                      next[index] = clean;
-                      setPinDigits(next);
-                      if (clean && index < 3) {
-                        (document.getElementById(`login-pin-${index + 1}`) as HTMLInputElement)?.focus();
-                      }
-                    }}
-                    id={`login-pin-${index}`}
-                    className="w-14 h-16 sm:w-16 sm:h-18 text-center text-3xl font-bold font-mono text-white bg-black/60 border border-white/20 focus:border-rose-500 focus:bg-rose-500/[0.08] rounded-2xl outline-none transition-all shadow-inner"
-                  />
-                ))}
-              </div>
-
-              <button
-                type="submit"
-                disabled={isSubmitting || pinDigits.join('').length !== 4}
-                className="w-full py-4 rounded-2xl bg-gradient-to-r from-rose-600 via-pink-600 to-amber-600 text-white font-body font-black text-xs uppercase tracking-[0.18em] shadow-2xl hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
-              >
-                {isSubmitting ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Authorizing Session...</span>
-                  </>
-                ) : (
-                  <>
-                    <ShieldCheck className="w-4 h-4" />
-                    <span>Enter Studio</span>
-                  </>
-                )}
-              </button>
-
-              <div className="text-center text-xs text-white/50 pt-1">
-                <button
-                  type="button"
-                  onClick={() => setLoginStep('otp')}
-                  className="text-white/60 hover:text-white transition-colors underline underline-offset-4 cursor-pointer"
-                >
-                  ← Back to OTP
                 </button>
               </div>
             </motion.form>

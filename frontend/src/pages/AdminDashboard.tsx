@@ -766,7 +766,7 @@ const WishEditorWrapper = () => {
 
 // --- FULL CMS EDITOR ---
 
-const WishEditor = ({ basePath = '/admin' }: { basePath?: string }) => {
+const WishEditor = ({ basePath = '/wishes' }: { basePath?: string }) => {
   const { scrapbookHero, splashScreen, zineSplitShowcase, coverflowGallery, zineArchive, giftSequence, memories, updateSection, currentWishSlug, isPublished } = useCmsStore();
   const navigate = useNavigate();
   const { id, tab } = useParams<{ id: string, tab: string }>();

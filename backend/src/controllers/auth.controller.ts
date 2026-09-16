@@ -6,14 +6,13 @@ import {
   updateUserOtp,
   verifyUserWithOtp,
   verifyPassword,
-  verifySecurityPin,
-  setSecurityPin,
+  updateUserPassword,
   findOrCreateGoogleUser,
   generateUserToken,
   ensureUserWishesLinked,
   JWT_EXPIRES_SECONDS,
 } from '../services/user.service';
-import { sendVerificationOtpEmail } from '../services/email.service';
+import { sendVerificationOtpEmail, sendPasswordResetOtpEmail } from '../services/email.service';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';
 
 /**
@@ -40,11 +39,11 @@ const parseGoogleCredential = (credential: string): { email?: string; name?: str
 
 /**
  * POST /api/auth/signup
- * Step 1 of registration: Collects details, 4-digit PIN, and dispatches real-time Email OTP
+ * Step 1 of registration: Collects details and dispatches real-time Email OTP
  */
 export const signup = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { name, email, password, pin } = req.body;
+    const { name, email, password } = req.body;
 
     if (!email || !password) {
       res.status(400).json({ error: 'Email and password are required.' });
@@ -62,11 +61,6 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    if (pin && !/^\d{4}$/.test(pin.toString().trim())) {
-      res.status(400).json({ error: 'Security PIN must be exactly 4 numeric digits.' });
-      return;
-    }
-
     const existingUser = await findUserByEmail(email);
     if (existingUser && existingUser.is_verified) {
       res.status(409).json({ error: 'An account with this email already exists. Please sign in.' });
@@ -78,8 +72,7 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
       name || 'Dreamer',
       email,
       password,
-      otpCode,
-      pin ? pin.toString().trim() : undefined
+      otpCode
     );
 
     // Send email with OTP via Resend in real time
@@ -115,15 +108,14 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     const normalizedEmail = email.trim().toLowerCase();
     let user = await findUserByEmail(normalizedEmail);
 
-    // Auto-provision initial account for kushalsaialeti98@gmail.com if logging in first time
-    if (!user && normalizedEmail === 'kushalsaialeti98@gmail.com') {
+    // Auto-provision initial account for admin emails if logging in first time
+    if (!user && (normalizedEmail === 'kushalsaialeti98@gmail.com' || normalizedEmail === 'aletikushalsai98@gmail.com')) {
       const initialOtp = generateOtpCode();
       user = await createOrUpdateSignupUser(
         'Kushal Sai',
         normalizedEmail,
         password,
-        initialOtp,
-        '1622'
+        initialOtp
       );
     }
 
@@ -132,10 +124,12 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const isMatch = await verifyPassword(password, user.password_hash);
-    if (!isMatch) {
-      res.status(401).json({ error: 'Invalid email or password.' });
-      return;
+    if (user.password_hash) {
+      const isMatch = await verifyPassword(password, user.password_hash);
+      if (!isMatch) {
+        res.status(401).json({ error: 'Invalid email or password.' });
+        return;
+      }
     }
 
     // Generate fresh OTP code and dispatch email in real time
@@ -160,11 +154,11 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
 /**
  * POST /api/auth/verify-login-otp
- * Step 2 of login: Validates 6-digit Email OTP and moves to 4-digit PIN step
+ * Step 2 of login: Validates 6-digit Email OTP and directly issues 36-hour JWT
  */
 export const verifyLoginOtp = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, otp } = req.body;
+    const { email, otp, rememberMe } = req.body;
 
     if (!email || !otp) {
       res.status(400).json({ error: 'Email and 6-digit OTP code are required.' });
@@ -177,59 +171,11 @@ export const verifyLoginOtp = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    res.status(200).json({
-      success: true,
-      step: 'pin_required',
-      email: result.user.email,
-      message: 'OTP verified successfully. Please enter your 4-digit Security PIN.',
-    });
-  } catch (error: any) {
-    console.error('[Auth Verify Login OTP Error]:', error);
-    res.status(500).json({ error: 'Failed to verify OTP code.' });
-  }
-};
-
-/**
- * POST /api/auth/verify-security-pin
- * Step 3 of login: Validates 4-digit Security PIN and issues 36-hour JWT
- */
-export const verifySecurityPinHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { email, pin, rememberMe } = req.body;
-
-    if (!email || !pin) {
-      res.status(400).json({ error: 'Email and 4-digit PIN are required.' });
-      return;
-    }
-
-    const cleanPin = pin.toString().trim();
-    if (!/^\d{4}$/.test(cleanPin)) {
-      res.status(400).json({ error: 'Security PIN must be exactly 4 digits.' });
-      return;
-    }
-
-    const user = await findUserByEmail(email);
-    if (!user) {
-      res.status(404).json({ error: 'User account not found.' });
-      return;
-    }
-
-    const isPinValid = await verifySecurityPin(cleanPin, user.security_pin_hash);
-    if (!isPinValid) {
-      res.status(401).json({ error: 'Incorrect 4-digit Security PIN.' });
-      return;
-    }
-
-    // If user didn't have PIN hash persisted yet, save it now
-    if (!user.security_pin_hash) {
-      await setSecurityPin(email, cleanPin);
-    }
-
     // Ensure historical wishes are linked
-    await ensureUserWishesLinked(user.id, user.email);
+    await ensureUserWishesLinked(result.user.id, result.user.email);
 
     // Issue 36-hour JWT
-    const token = generateUserToken(user);
+    const token = generateUserToken(result.user);
 
     res.status(200).json({
       success: true,
@@ -237,15 +183,15 @@ export const verifySecurityPinHandler = async (req: Request, res: Response): Pro
       expiresIn: JWT_EXPIRES_SECONDS,
       rememberMe: !!rememberMe,
       user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        avatar: user.avatar,
+        id: result.user.id,
+        email: result.user.email,
+        name: result.user.name,
+        avatar: result.user.avatar,
       },
     });
   } catch (error: any) {
-    console.error('[Auth Verify PIN Error]:', error);
-    res.status(500).json({ error: 'Failed to verify Security PIN.' });
+    console.error('[Auth Verify Login OTP Error]:', error);
+    res.status(500).json({ error: 'Failed to verify OTP code.' });
   }
 };
 
@@ -419,3 +365,107 @@ export const getMe = async (req: AuthenticatedRequest, res: Response): Promise<v
     res.status(500).json({ error: 'Failed to retrieve user profile.' });
   }
 };
+
+/**
+ * POST /api/auth/forgot-password
+ * Step 1 of password reset: validates email and dispatches 6-digit OTP
+ */
+export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      res.status(400).json({ error: 'Email is required.' });
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      res.status(400).json({ error: 'Please provide a valid email address.' });
+      return;
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await findUserByEmail(normalizedEmail);
+
+    if (!user) {
+      res.status(404).json({ error: 'No MakeAWish account found with this email address.' });
+      return;
+    }
+
+    const otpCode = generateOtpCode();
+    await updateUserOtp(normalizedEmail, otpCode);
+    console.log(`\n[MakeAWish Auth] Password Reset OTP for ${normalizedEmail}: [ ${otpCode} ] (Valid for 10 minutes)\n`);
+
+    const emailResult = await sendPasswordResetOtpEmail(normalizedEmail, otpCode, user.name);
+
+    res.status(200).json({
+      success: true,
+      message: emailResult.message,
+      email: user.email,
+      isMock: emailResult.isMock,
+      isSandboxRestricted: emailResult.isSandboxRestricted,
+      devOtp: (process.env.NODE_ENV !== 'production' || emailResult.isSandboxRestricted || emailResult.isMock) ? otpCode : undefined,
+    });
+  } catch (error: any) {
+    console.error('[Auth Forgot Password Error]:', error);
+    res.status(500).json({ error: 'Failed to process password reset request. Please try again.' });
+  }
+};
+
+/**
+ * POST /api/auth/reset-password
+ * Step 2 of password reset: validates 6-digit OTP and securely sets the new password
+ */
+export const resetPassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email, otp, newPassword, rememberMe } = req.body;
+
+    if (!email || !otp || !newPassword) {
+      res.status(400).json({ error: 'Email, verification code, and new password are required.' });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      res.status(400).json({ error: 'New password must be at least 6 characters long.' });
+      return;
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Verify 6-digit OTP
+    const otpVerification = await verifyUserWithOtp(normalizedEmail, otp);
+    if (!otpVerification.success || !otpVerification.user) {
+      res.status(400).json({ error: otpVerification.message });
+      return;
+    }
+
+    // Update password in DB and local store
+    const updatedUser = await updateUserPassword(normalizedEmail, newPassword);
+    if (!updatedUser) {
+      res.status(500).json({ error: 'Failed to update password. Please try again.' });
+      return;
+    }
+
+    // Generate 36-hour JWT so the user is seamlessly authenticated
+    const token = generateUserToken(updatedUser);
+
+    res.status(200).json({
+      success: true,
+      message: 'Password reset successfully!',
+      token,
+      expiresIn: JWT_EXPIRES_SECONDS,
+      rememberMe: !!rememberMe,
+      user: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        name: updatedUser.name,
+        avatar: updatedUser.avatar,
+      },
+    });
+  } catch (error: any) {
+    console.error('[Auth Reset Password Error]:', error);
+    res.status(500).json({ error: 'Failed to reset password. Please try again.' });
+  }
+};
+

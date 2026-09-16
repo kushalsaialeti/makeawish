@@ -9,7 +9,6 @@ import {
   User,
   Mail,
   Lock,
-  KeyRound,
   Sparkles,
   AlertCircle,
   RefreshCw,
@@ -20,7 +19,6 @@ export const Signup: React.FC = () => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [pin, setPin] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -40,15 +38,10 @@ export const Signup: React.FC = () => {
       return;
     }
 
-    if (pin && !/^\d{4}$/.test(pin.trim())) {
-      setAuthError('Security PIN must be exactly 4 digits.');
-      return;
-    }
-
     setIsSubmitting(true);
     setAuthError(null);
 
-    const res = await signup(fullName || 'Dreamer', email, password, pin || '1622');
+    const res = await signup(fullName || 'Dreamer', email, password);
     setIsSubmitting(false);
 
     if (res.success) {
@@ -180,27 +173,9 @@ export const Signup: React.FC = () => {
             />
           </div>
 
-          <div>
-            <label className="block text-[11px] font-body font-semibold uppercase tracking-[0.16em] text-white/60 mb-1.5 flex items-center gap-1.5">
-              <KeyRound className="w-3.5 h-3.5 text-rose-400/70" />
-              <span>4-Digit Security PIN (For Account Login)</span>
-            </label>
-            <input
-              type="password"
-              inputMode="numeric"
-              maxLength={4}
-              value={pin}
-              onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-              placeholder="e.g. 1622"
-              required
-              disabled={isSubmitting}
-              className="w-full bg-black/50 border border-white/15 focus:border-rose-500 rounded-xl px-4 py-3 font-mono text-center text-lg tracking-[0.3em] text-white placeholder:text-white/20 transition-all outline-none"
-            />
-          </div>
-
           <button
             type="submit"
-            disabled={isSubmitting || !email || !password || pin.length !== 4}
+            disabled={isSubmitting || !email || !password}
             className="w-full mt-2 bg-gradient-to-r from-rose-600 via-pink-600 to-amber-600 text-white py-3.5 rounded-xl font-body font-bold text-xs uppercase tracking-[0.18em] shadow-xl hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
           >
             {isSubmitting ? (

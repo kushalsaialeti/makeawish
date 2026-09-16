@@ -160,3 +160,140 @@ export const sendVerificationOtpEmail = async (
     };
   }
 };
+
+/**
+ * Send a 6-digit OTP verification email for Password Reset.
+ */
+export const sendPasswordResetOtpEmail = async (
+  recipientEmail: string,
+  otpCode: string,
+  recipientName: string = 'Dreamer'
+): Promise<SendOtpResult> => {
+  const resend = getResendClient();
+
+  if (!resend) {
+    console.log(`[Email Service] RESEND_API_KEY is not configured or using dummy key. Password Reset OTP for ${recipientEmail}: [ ${otpCode} ]`);
+    return {
+      success: true,
+      message: 'Password reset code generated. (Check server logs or replace RESEND_API_KEY in .env for live email delivery)',
+      isMock: true,
+      otpCode,
+    };
+  }
+
+  const htmlContent = `
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 560px; margin: 0 auto; background-color: #0d0d12; color: #f3f4f6; border-radius: 16px; border: 1px solid rgba(244, 63, 94, 0.2); overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.6);">
+      <div style="background: linear-gradient(135deg, #181824 0%, #0d0d12 100%); padding: 36px 32px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.08);">
+        <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px;">
+          Make<span style="color: #f43f5e;">A</span>Wish
+        </h1>
+        <p style="margin: 8px 0 0 0; font-size: 14px; color: #9ca3af; font-style: italic;">
+          Password Reset Verification
+        </p>
+      </div>
+
+      <div style="padding: 36px 32px;">
+        <h2 style="margin: 0 0 16px 0; font-size: 20px; font-weight: 600; color: #f9fafb;">
+          Hello, ${recipientName}
+        </h2>
+        <p style="margin: 0 0 24px 0; font-size: 15px; line-height: 1.6; color: #d1d5db;">
+          We received a request to reset your password. Please use the 6-digit verification code below to verify your identity and set a new password:
+        </p>
+
+        <div style="background: linear-gradient(135deg, rgba(244,63,94,0.12) 0%, rgba(147,51,234,0.12) 100%); border: 1px dashed rgba(244, 63, 94, 0.4); border-radius: 12px; padding: 24px; text-align: center; margin: 28px 0;">
+          <span style="font-size: 38px; font-weight: 800; letter-spacing: 10px; color: #f43f5e; font-family: monospace;">
+            ${otpCode}
+          </span>
+        </div>
+
+        <p style="margin: 0 0 8px 0; font-size: 13px; color: #9ca3af; text-align: center;">
+          This code will expire in <strong>10 minutes</strong>.
+        </p>
+        <p style="margin: 0; font-size: 13px; color: #6b7280; text-align: center;">
+          If you did not request a password reset, you can safely ignore this email. Your password will remain unchanged.
+        </p>
+      </div>
+
+      <div style="background-color: #09090d; padding: 20px 32px; text-align: center; border-top: 1px solid rgba(255,255,255,0.06); font-size: 12px; color: #6b7280;">
+        &copy; ${new Date().getFullYear()} MakeAWish. Designed for unforgettable celebrations.
+      </div>
+    </div>
+  `;
+
+  const rawSender = (process.env.EMAIL_FROM || '').trim().replace(/^["']|["']$/g, '');
+  const preferredSender = rawSender && !rawSender.includes('@gmail.com')
+    ? rawSender
+    : 'MakeAWish <onboarding@resend.dev>';
+
+  try {
+    const sendResponse = await resend.emails.send({
+      from: preferredSender,
+      to: recipientEmail,
+      subject: `MakeAWish Password Reset Code: ${otpCode}`,
+      html: htmlContent,
+    });
+
+    if (sendResponse.error) {
+      console.warn('[Resend API Response - Password Reset]:', sendResponse.error);
+
+      const errorMessage = sendResponse.error.message || '';
+      const isSandboxRestriction = Boolean(
+        sendResponse.error.statusCode === 403 ||
+        errorMessage.includes('only send testing emails') ||
+        errorMessage.includes('resend.com/domains')
+      );
+
+      if (isSandboxRestriction) {
+        console.warn(`\n[Resend Sandbox Notice]: Cannot deliver live reset email to "${recipientEmail}" because onboarding@resend.dev only allows sending to account owner (kushalsaialeti98@gmail.com).`);
+        console.log(`[MakeAWish Auth] Password Reset OTP for ${recipientEmail}: [ ${otpCode} ]\n`);
+
+        return {
+          success: true,
+          isSandboxRestricted: true,
+          restrictedOwnerEmail: 'kushalsaialeti98@gmail.com',
+          otpCode,
+          message: `Resend sandbox note: onboarding@resend.dev only sends real emails to kushalsaialeti98@gmail.com. Reset code: ${otpCode}`,
+        };
+      }
+
+      if (preferredSender !== 'MakeAWish <onboarding@resend.dev>') {
+        const fallbackResponse = await resend.emails.send({
+          from: 'MakeAWish <onboarding@resend.dev>',
+          to: recipientEmail,
+          subject: `MakeAWish Password Reset Code: ${otpCode}`,
+          html: htmlContent,
+        });
+
+        if (fallbackResponse.error) {
+          console.error('[Resend Error]: Fallback reset send failed:', fallbackResponse.error);
+          return {
+            success: true,
+            isSandboxRestricted: true,
+            otpCode,
+            message: `Password reset code generated: ${otpCode}`,
+          };
+        } else {
+          console.log('[Resend Success]: Reset email sent via fallback sender, ID:', fallbackResponse.data?.id);
+        }
+      }
+    } else {
+      console.log('[Resend Success]: Password reset email dispatched to recipient inbox, ID:', sendResponse.data?.id);
+    }
+
+    return {
+      success: true,
+      message: 'A 6-digit password reset code has been sent to your email.',
+      isMock: false,
+    };
+  } catch (error: any) {
+    console.error('[Email Service Exception - Password Reset]:', error);
+    return {
+      success: true,
+      isSandboxRestricted: true,
+      otpCode,
+      message: `Password reset code generated: ${otpCode}`,
+      isMock: true,
+    };
+  }
+};
+

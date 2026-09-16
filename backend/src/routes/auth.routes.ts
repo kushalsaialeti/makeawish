@@ -5,7 +5,8 @@ import {
   resendOtp,
   login,
   verifyLoginOtp,
-  verifySecurityPinHandler,
+  forgotPassword,
+  resetPassword,
   googleAuth,
   getMe,
 } from '../controllers/auth.controller';
@@ -18,10 +19,13 @@ router.post('/signup', signup);
 router.post('/verify-otp', verifyOtp);
 router.post('/resend-otp', resendOtp);
 
-// 3-Step Multi-Factor Authentication Login Endpoints
+// 2-Step OTP-Based Authentication Login Endpoints
 router.post('/login', login);                                 // Step 1: Email + Password -> Sends Email OTP
-router.post('/verify-login-otp', verifyLoginOtp);             // Step 2: Email + 6-digit OTP -> Unlocks PIN step
-router.post('/verify-security-pin', verifySecurityPinHandler); // Step 3: Email + 4-digit PIN -> Issues 36h JWT
+router.post('/verify-login-otp', verifyLoginOtp);             // Step 2: Email + 6-digit OTP -> Issues 36h JWT
+
+// Password Reset Flow Endpoints
+router.post('/forgot-password', forgotPassword);              // Step 1: Request 6-digit OTP for password reset
+router.post('/reset-password', resetPassword);                // Step 2: Verify OTP + set new password
 
 // Google OAuth
 router.post('/google', googleAuth);

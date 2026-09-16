@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '../../store/authStore';
 import { useNavigate } from 'react-router-dom';
+import { SmoothOtpInput } from './SmoothOtpInput';
 import { ShieldCheck, RefreshCw, ArrowLeft, Sparkles, AlertCircle } from 'lucide-react';
 
 interface OtpVerificationCardProps {
@@ -21,14 +22,10 @@ export const OtpVerificationCard: React.FC<OtpVerificationCardProps> = ({
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const { verifyOtp, resendOtp, isLoading, rememberMe, devOtp, isSandboxRestricted } = useAuthStore();
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Focus first input on mount
-    inputRefs.current[0]?.focus();
-
     // 60-second countdown timer
     const interval = setInterval(() => {
       setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
@@ -44,51 +41,6 @@ export const OtpVerificationCard: React.FC<OtpVerificationCardProps> = ({
       if (i < 6) newDigits[i] = digit;
     });
     setDigits(newDigits);
-    inputRefs.current[5]?.focus();
-  };
-
-  const handleDigitChange = (index: number, value: string) => {
-    // Handle multiple characters pasted
-    if (value.length > 1) {
-      const pastedDigits = value.replace(/\D/g, '').slice(0, 6).split('');
-      const newDigits = [...digits];
-      pastedDigits.forEach((digit, i) => {
-        if (i < 6) newDigits[i] = digit;
-      });
-      setDigits(newDigits);
-      const nextIndex = Math.min(pastedDigits.length, 5);
-      inputRefs.current[nextIndex]?.focus();
-      return;
-    }
-
-    const cleanDigit = value.replace(/\D/g, '');
-    const newDigits = [...digits];
-    newDigits[index] = cleanDigit;
-    setDigits(newDigits);
-
-    // Auto-advance to next input
-    if (cleanDigit && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace' && !digits[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-    if (!pastedData) return;
-
-    const newDigits = [...digits];
-    pastedData.split('').forEach((char, i) => {
-      if (i < 6) newDigits[i] = char;
-    });
-    setDigits(newDigits);
-    inputRefs.current[Math.min(pastedData.length, 5)]?.focus();
   };
 
   const handleVerify = async (e?: React.FormEvent) => {
@@ -127,7 +79,6 @@ export const OtpVerificationCard: React.FC<OtpVerificationCardProps> = ({
       setStatusMessage(result.message || 'A new 6-digit code has been dispatched.');
       setCountdown(60);
       setDigits(['', '', '', '', '', '']);
-      inputRefs.current[0]?.focus();
     } else {
       setErrorMessage(result.error || 'Failed to resend code');
     }
@@ -225,23 +176,14 @@ export const OtpVerificationCard: React.FC<OtpVerificationCardProps> = ({
 
         {/* 6-Digit OTP Form */}
         <form onSubmit={handleVerify} className="space-y-6">
-          <div className="flex justify-between items-center gap-2 sm:gap-3">
-            {digits.map((digit, index) => (
-              <input
-                key={index}
-                ref={(el) => {
-                  inputRefs.current[index] = el;
-                }}
-                type="text"
-                inputMode="numeric"
-                maxLength={1}
-                value={digit}
-                onChange={(e) => handleDigitChange(index, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(index, e)}
-                onPaste={handlePaste}
-                className="w-11 h-13 sm:w-13 sm:h-15 text-center text-2xl font-bold font-mono text-white bg-white/[0.04] border border-white/15 focus:border-rose-500 focus:bg-rose-500/[0.06] rounded-xl outline-none transition-all shadow-inner focus:shadow-[0_0_15px_rgba(244,63,94,0.3)]"
-              />
-            ))}
+          <div className="py-2">
+            <SmoothOtpInput
+              value={digits}
+              onChange={setDigits}
+              disabled={isLoading}
+              autoFocus={true}
+              idPrefix="signup-otp"
+            />
           </div>
 
           {/* Submit Button */}

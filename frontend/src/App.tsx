@@ -17,6 +17,7 @@ import { useKeepAlive } from './hooks/useKeepAlive';
 import { NotFound } from './pages/NotFound';
 import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
+import { ResetPassword } from './pages/ResetPassword';
 import { LandingPage } from './pages/LandingPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Navbar } from './components/layout/Navbar';
@@ -171,6 +172,8 @@ function GlobalNavigation() {
     path !== '/' &&
     path !== '/login' &&
     path !== '/signup' &&
+    path !== '/reset-password' &&
+    path !== '/forgot-password' &&
     !path.startsWith('/wishes') &&
     !path.startsWith('/dashboard') &&
     !path.startsWith('/admin');
@@ -199,16 +202,16 @@ function App() {
           {/* Authentication Routes for All Users */}
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/forgot-password" element={<Navigate to="/reset-password" replace />} />
 
           {/* Protected Creator Studio Routes */}
           <Route path="/wishes/*" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
           <Route path="/wishes" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
           <Route path="/dashboard/*" element={<Navigate to="/wishes" replace />} />
           <Route path="/dashboard" element={<Navigate to="/wishes" replace />} />
-          <Route path="/admin" element={<Navigate to="/login" replace />} />
-          <Route path="/admin/*" element={<Navigate to="/login" replace />} />
-          <Route path="/admin-1622" element={<Navigate to="/login" replace />} />
-          <Route path="/admin-1622/*" element={<Navigate to="/login" replace />} />
+          <Route path="/admin" element={<Navigate to="/wishes" replace />} />
+          <Route path="/admin/*" element={<Navigate to="/wishes" replace />} />
           
           {/* Public Recipient Experience Phases - Publicly viewable without login */}
           <Route path="/:slug/unlock" element={<WishView phase="unlock" />} />

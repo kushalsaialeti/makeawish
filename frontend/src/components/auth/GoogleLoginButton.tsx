@@ -13,7 +13,7 @@ export const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
   const [notice, setNotice] = useState<string | null>(null);
 
   const handleGoogleClick = () => {
-    setNotice('Google OAuth sign-in & sign-up are coming in a future update. Please authenticate using Email + OTP + 4-Digit Security PIN.');
+    setNotice('Google OAuth sign-in & sign-up are coming in a future update. Please authenticate using Email + Password & OTP.');
     setTimeout(() => {
       setNotice(null);
     }, 6000);

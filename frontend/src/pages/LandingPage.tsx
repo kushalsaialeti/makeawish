@@ -525,7 +525,7 @@ const WhyMakeAWishSection: React.FC = () => {
                   THE MAKE A WISH EXPERIENCE
                 </span>
                 <span className="font-body text-metadata text-emerald-400 bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-500/30 font-bold">
-                  Cinematic Keepsake
+                  Cinematic Keepsafe
                 </span>
               </div>
 
@@ -565,7 +565,7 @@ const WhyMakeAWishSection: React.FC = () => {
             </div>
 
             <div className="pt-8 border-t border-white/10 mt-8 text-center font-body text-eyebrow text-pink-300 font-bold tracking-widest-cinematic">
-              Outcome: A keepsake they revisit for years
+              Outcome: A keepsafe they revisit for years
             </div>
           </div>
 
@@ -961,24 +961,24 @@ const CountdownDemo = () => {
 };
 
 const KeypadDemo = () => {
-  const [pin, setPin] = useState('');
+  const [passcode, setPasscode] = useState('');
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   const handleKey = (digit: string) => {
     if (status === 'success') return;
     if (digit === 'DEL') {
-      setPin(prev => prev.slice(0, -1));
+      setPasscode(prev => prev.slice(0, -1));
       setStatus('idle');
     } else if (digit === 'ENTER') {
-      if (pin === '1225' || pin === '12162005' || pin.length >= 4) {
+      if (passcode === '1225' || passcode === '12162005' || passcode.length >= 4) {
         setStatus('success');
         confetti({ particleCount: 50, spread: 70 });
       } else {
         setStatus('error');
         setTimeout(() => setStatus('idle'), 1200);
       }
-    } else if (pin.length < 8) {
-      setPin(prev => prev + digit);
+    } else if (passcode.length < 8) {
+      setPasscode(prev => prev + digit);
       setStatus('idle');
     }
   };
@@ -990,7 +990,7 @@ const KeypadDemo = () => {
       </Eyebrow>
       
       <div className="h-10 w-44 bg-white/5 border border-white/15 rounded-xl flex items-center justify-center mb-3 font-mono text-base tracking-widest text-white">
-        {pin ? pin.split('').map(() => '•').join(' ') : <span className="text-white/20 text-xs">Enter PIN</span>}
+        {passcode ? passcode.split('').map(() => '•').join(' ') : <span className="text-white/20 text-xs">Enter Passcode</span>}
       </div>
 
       {status === 'success' && (
@@ -1000,7 +1000,7 @@ const KeypadDemo = () => {
       )}
       {status === 'error' && (
         <span className="font-body text-xs text-red-400 font-bold mb-2 animate-shake">
-          ✕ Incorrect PIN. Hint: 1225
+          ✕ Incorrect Passcode. Hint: 1225
         </span>
       )}
 
@@ -1524,7 +1524,7 @@ const CreatorStudioShowcase: React.FC<{ onPrimaryClick: () => void }> = ({ onPri
                   </Display>
                 </div>
                 <div className="px-3 py-1 bg-white/5 border border-white/10 rounded-full font-mono text-[10px] text-white/70">
-                  3 ACTIVE STORIES
+                  # Active Stories
                 </div>
               </div>
 
@@ -1540,8 +1540,8 @@ const CreatorStudioShowcase: React.FC<{ onPrimaryClick: () => void }> = ({ onPri
                         ● Live
                       </span>
                     </div>
-                    <Display size="md" italic as="h5" className="text-lg text-white">Lucky's 21st Birthday</Display>
-                    <p className="font-mono text-xs text-white/40">/luckyyyy-thallii</p>
+                    <Display size="md" italic as="h5" className="text-lg text-white">Sushmitha's Birthday</Display>
+                    <p className="font-mono text-xs text-white/40"></p>
                   </div>
                   <div className="flex gap-2">
                     <span className="font-body font-bold text-[11px] bg-white/10 text-white px-3 py-1.5 rounded-xl uppercase">
@@ -1561,7 +1561,7 @@ const CreatorStudioShowcase: React.FC<{ onPrimaryClick: () => void }> = ({ onPri
                       </span>
                     </div>
                     <Display size="md" italic as="h5" className="text-lg text-white">Four Years Together</Display>
-                    <p className="font-mono text-xs text-white/40">/our-forever-story</p>
+                    <p className="font-mono text-xs text-white/40"></p>
                   </div>
                   <div className="flex gap-2">
                     <span className="font-body font-bold text-[11px] bg-white/10 text-white px-3 py-1.5 rounded-xl uppercase">
@@ -1996,9 +1996,9 @@ const SecuritySection: React.FC = () => {
             <Eyebrow accent className="block mb-1">
               FACTOR 03
             </Eyebrow>
-            <Display size="md" italic as="h4" className="text-xl text-white mb-2">4-Digit Security PIN</Display>
+            <Display size="md" italic as="h4" className="text-xl text-white mb-2">Encrypted Session</Display>
             <Body size="sm" className="text-white/50">
-              An extra secret numeric PIN required before opening the wish studio.
+              36-hour stateless cryptographic session tokens guarding your private studio.
             </Body>
           </div>
 

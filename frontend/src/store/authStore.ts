@@ -14,7 +14,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  loginStep: 'credentials' | 'otp' | 'pin';
+  loginStep: 'credentials' | 'otp';
   pendingEmail: string | null;
   rememberMe: boolean;
   isSandboxRestricted?: boolean;
@@ -24,16 +24,17 @@ interface AuthState {
   // Actions
   initialize: () => Promise<void>;
   setRememberMe: (remember: boolean) => void;
-  setLoginStep: (step: 'credentials' | 'otp' | 'pin') => void;
+  setLoginStep: (step: 'credentials' | 'otp') => void;
   setPendingEmail: (email: string | null) => void;
   setDevOtp: (otp?: string) => void;
   clearError: () => void;
   login: (email: string, password: string) => Promise<{ success: boolean; step?: string; error?: string; isSandboxRestricted?: boolean; devOtp?: string; message?: string }>;
-  verifyLoginOtp: (email: string, otp: string) => Promise<{ success: boolean; step?: string; error?: string }>;
-  verifySecurityPin: (email: string, pin: string, rememberMe?: boolean) => Promise<{ success: boolean; error?: string }>;
-  signup: (name: string, email: string, password: string, pin?: string) => Promise<{ success: boolean; message?: string; isMock?: boolean; isSandboxRestricted?: boolean; devOtp?: string; error?: string }>;
+  verifyLoginOtp: (email: string, otp: string, rememberMe?: boolean) => Promise<{ success: boolean; error?: string }>;
+  signup: (name: string, email: string, password: string) => Promise<{ success: boolean; message?: string; isMock?: boolean; isSandboxRestricted?: boolean; devOtp?: string; error?: string }>;
   verifyOtp: (email: string, otp: string, rememberMe?: boolean) => Promise<{ success: boolean; error?: string }>;
   resendOtp: (email: string) => Promise<{ success: boolean; message?: string; error?: string; isSandboxRestricted?: boolean; devOtp?: string }>;
+  forgotPassword: (email: string) => Promise<{ success: boolean; message?: string; error?: string; isSandboxRestricted?: boolean; devOtp?: string }>;
+  resetPassword: (email: string, otp: string, newPassword: string, rememberMe?: boolean) => Promise<{ success: boolean; message?: string; error?: string }>;
   googleLogin: (payload: { credential?: string; email?: string; name?: string; picture?: string; sub?: string }, rememberMe?: boolean) => Promise<{ success: boolean; error?: string }>;
   claimWish: (wishId: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
@@ -57,7 +58,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   otpNotice: null,
 
   setRememberMe: (rememberMe: boolean) => set({ rememberMe }),
-  setLoginStep: (loginStep: 'credentials' | 'otp' | 'pin') => set({ loginStep }),
+  setLoginStep: (loginStep: 'credentials' | 'otp') => set({ loginStep }),
   setPendingEmail: (pendingEmail: string | null) => set({ pendingEmail }),
   setDevOtp: (devOtp?: string) => set({ devOtp }),
   clearError: () => set({ error: null, otpNotice: null }),
@@ -167,14 +168,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  verifyLoginOtp: async (email, otp) => {
+  verifyLoginOtp: async (email, otp, remember = true) => {
     try {
       set({ isLoading: true, error: null });
 
       const res = await fetch(`${API_BASE}/auth/verify-login-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), otp: otp.trim() }),
+        body: JSON.stringify({ email: email.trim(), otp: otp.trim(), rememberMe: remember }),
       });
 
       const data = await res.json();
@@ -182,37 +183,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (!res.ok) {
         set({ error: data.error || 'Invalid OTP code', isLoading: false });
         return { success: false, error: data.error || 'Invalid OTP code' };
-      }
-
-      set({
-        loginStep: 'pin',
-        isLoading: false,
-        error: null,
-      });
-
-      return { success: true, step: 'pin' };
-    } catch (err: any) {
-      const msg = err.message || 'Verification failed';
-      set({ error: msg, isLoading: false });
-      return { success: false, error: msg };
-    }
-  },
-
-  verifySecurityPin: async (email, pin, remember = true) => {
-    try {
-      set({ isLoading: true, error: null });
-
-      const res = await fetch(`${API_BASE}/auth/verify-security-pin`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), pin: pin.trim(), rememberMe: remember }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        set({ error: data.error || 'Incorrect Security PIN', isLoading: false });
-        return { success: false, error: data.error || 'Incorrect Security PIN' };
       }
 
       const { token, user } = data;
@@ -244,20 +214,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       return { success: true };
     } catch (err: any) {
-      const msg = err.message || 'PIN verification failed';
+      const msg = err.message || 'Verification failed';
       set({ error: msg, isLoading: false });
       return { success: false, error: msg };
     }
   },
 
-  signup: async (name, email, password, pin) => {
+  signup: async (name, email, password) => {
     try {
       set({ isLoading: true, error: null });
 
       const res = await fetch(`${API_BASE}/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email: email.trim(), password, pin: pin ? pin.trim() : undefined }),
+        body: JSON.stringify({ name, email: email.trim(), password }),
       });
 
       const data = await res.json();
@@ -365,6 +335,102 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       };
     } catch (err: any) {
       return { success: false, error: err.message || 'Failed to resend code' };
+    }
+  },
+
+  forgotPassword: async (email: string) => {
+    try {
+      set({ isLoading: true, error: null });
+
+      const res = await fetch(`${API_BASE}/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        set({ error: data.error || 'Failed to send reset code', isLoading: false });
+        return { success: false, error: data.error || 'Failed to send reset code' };
+      }
+
+      set({
+        pendingEmail: email.trim(),
+        isSandboxRestricted: Boolean(data.isSandboxRestricted),
+        devOtp: data.devOtp,
+        otpNotice: data.message,
+        isLoading: false,
+        error: null,
+      });
+
+      return {
+        success: true,
+        message: data.message,
+        isSandboxRestricted: data.isSandboxRestricted,
+        devOtp: data.devOtp,
+      };
+    } catch (err: any) {
+      const msg = err.message || 'Connection to auth server failed';
+      set({ error: msg, isLoading: false });
+      return { success: false, error: msg };
+    }
+  },
+
+  resetPassword: async (email: string, otp: string, newPassword: string, remember = true) => {
+    try {
+      set({ isLoading: true, error: null });
+
+      const res = await fetch(`${API_BASE}/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email.trim(),
+          otp: otp.trim(),
+          newPassword,
+          rememberMe: remember,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        set({ error: data.error || 'Password reset failed', isLoading: false });
+        return { success: false, error: data.error || 'Password reset failed' };
+      }
+
+      const { token, user } = data;
+
+      if (remember) {
+        localStorage.setItem(TOKEN_KEY, token);
+        localStorage.setItem(USER_KEY, JSON.stringify(user));
+        sessionStorage.removeItem(TOKEN_KEY);
+        sessionStorage.removeItem(USER_KEY);
+      } else {
+        sessionStorage.setItem(TOKEN_KEY, token);
+        sessionStorage.setItem(USER_KEY, JSON.stringify(user));
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
+      }
+
+      set({
+        token,
+        user,
+        isAuthenticated: true,
+        loginStep: 'credentials',
+        pendingEmail: null,
+        isSandboxRestricted: false,
+        devOtp: undefined,
+        otpNotice: null,
+        isLoading: false,
+        error: null,
+      });
+
+      return { success: true, message: data.message };
+    } catch (err: any) {
+      const msg = err.message || 'Failed to reset password';
+      set({ error: msg, isLoading: false });
+      return { success: false, error: msg };
     }
   },
 
