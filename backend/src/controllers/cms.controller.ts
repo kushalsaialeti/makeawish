@@ -366,6 +366,15 @@ export const updateWishContent = async (req: AuthenticatedRequest, res: Response
   }
 };
 
+// Helper to ensure Cloudinary URLs use dynamic content negotiation (AVIF/WebP) and perceptual quality
+const optimizeCloudinaryUrl = (rawUrl: string): string => {
+  if (!rawUrl || typeof rawUrl !== 'string') return rawUrl;
+  if (rawUrl.includes('/image/upload/') && !rawUrl.includes('/image/upload/f_auto')) {
+    return rawUrl.replace('/image/upload/', '/image/upload/f_auto,q_auto/');
+  }
+  return rawUrl;
+};
+
 // Handle media uploads
 export const uploadMedia = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
@@ -373,7 +382,8 @@ export const uploadMedia = async (req: AuthenticatedRequest, res: Response): Pro
       res.status(400).json({ error: 'No file uploaded' });
       return;
     }
-    res.status(200).json({ url: req.file.path });
+    const optimizedUrl = optimizeCloudinaryUrl(req.file.path);
+    res.status(200).json({ url: optimizedUrl });
   } catch (error: any) {
     console.error('[CMS] Media Upload Error:', error);
     res.status(500).json({ error: error.message || 'Upload failed' });

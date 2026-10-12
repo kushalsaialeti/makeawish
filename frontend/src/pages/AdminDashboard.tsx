@@ -19,6 +19,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { API_BASE } from '../config/api';
+import { compressImageForUpload, optimizeCloudinaryUrl } from '../utils/imageOptimizer';
 
 export const OCCASIONS = [
   { id: 'all', label: 'All Occasions', icon: Sparkles, bg: 'from-pink-500/20 to-rose-500/20', text: 'text-pink-300' },
@@ -812,9 +813,12 @@ const WishEditor = ({ basePath = '/wishes' }: { basePath?: string }) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadingField(fieldName);
-    const formData = new FormData();
-    formData.append('file', file);
     try {
+      // Compress and convert to WebP client-side to eliminate upload latency on slow connections
+      const optimizedFile = await compressImageForUpload(file);
+      const formData = new FormData();
+      formData.append('file', optimizedFile);
+
       const token = useAuthStore.getState().getToken() || '';
       const res = await fetch(`${API_BASE}/cms/upload`, { 
         method: 'POST', 
@@ -823,7 +827,8 @@ const WishEditor = ({ basePath = '/wishes' }: { basePath?: string }) => {
       });
       if (!res.ok) throw new Error('Upload failed');
       const data = await res.json();
-      setter((prev: any) => ({ ...prev, [fieldName]: data.url }));
+      const finalUrl = optimizeCloudinaryUrl(data.url);
+      setter((prev: any) => ({ ...prev, [fieldName]: finalUrl }));
     } catch (error: any) {
       console.error('[CMS] Media Upload Error:', error);
       alert('Upload failed: ' + (error.message || 'Error'));
@@ -836,9 +841,12 @@ const WishEditor = ({ basePath = '/wishes' }: { basePath?: string }) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadingField(`${arrayKey}-${index}`);
-    const formData = new FormData();
-    formData.append('file', file);
     try {
+      // Compress and convert to WebP client-side to eliminate upload latency on slow connections
+      const optimizedFile = await compressImageForUpload(file);
+      const formData = new FormData();
+      formData.append('file', optimizedFile);
+
       const token = useAuthStore.getState().getToken() || '';
       const res = await fetch(`${API_BASE}/cms/upload`, { 
         method: 'POST', 
@@ -847,14 +855,15 @@ const WishEditor = ({ basePath = '/wishes' }: { basePath?: string }) => {
       });
       if (!res.ok) throw new Error('Upload failed');
       const data = await res.json();
+      const finalUrl = optimizeCloudinaryUrl(data.url);
       
       setter((prev: any) => {
         if (!prev || !prev[arrayKey]) return prev;
         const newItems = [...prev[arrayKey]];
         if (typeof newItems[index] === 'string') {
-          newItems[index] = data.url;
+          newItems[index] = finalUrl;
         } else {
-          newItems[index] = { ...newItems[index], [fieldName]: data.url };
+          newItems[index] = { ...newItems[index], [fieldName]: finalUrl };
         }
         return { ...prev, [arrayKey]: newItems };
       });

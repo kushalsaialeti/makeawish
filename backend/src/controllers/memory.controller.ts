@@ -21,7 +21,10 @@ export const createMemory = async (req: Request, res: Response): Promise<void> =
     let imageUrl = '';
 
     if (req.file) {
-      imageUrl = req.file.path; // Cloudinary URL
+      const rawPath = req.file.path;
+      imageUrl = (rawPath.includes('/image/upload/') && !rawPath.includes('/image/upload/f_auto'))
+        ? rawPath.replace('/image/upload/', '/image/upload/f_auto,q_auto/')
+        : rawPath;
     }
 
     const { data, error } = await supabase
